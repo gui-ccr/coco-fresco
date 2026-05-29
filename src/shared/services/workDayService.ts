@@ -1,5 +1,5 @@
 import { supabase } from '@/config/supabase';
-import type { WorkDay } from '@/shared/types/transaction';
+import type { WorkDay } from '@/shared/types/workDay';
 
 function rowToWorkDay(row: { id: string; date: string; capital_init: number; created_at: string }): WorkDay {
   return {

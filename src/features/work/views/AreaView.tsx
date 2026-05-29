@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { TrendingUp, TrendingDown, PackageOpen } from 'lucide-react';
-import { type Transaction, type AreaId, CATEGORY_META, AREA_META } from '@/shared/types/transaction';
+import { type Transaction, type AreaId, CATEGORY_META } from '@/shared/types/transaction';
+import { AREA_META } from '@/shared/types/area';
 import { formatBRL } from '@/shared/lib/format';
 import { TransactionItem } from '@/shared/components/TransactionItem';
 

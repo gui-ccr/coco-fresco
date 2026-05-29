@@ -23,9 +23,9 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard': return <DashboardView transactions={transactions} workDay={today} />;
-      case 'trabalho':  return <AreaView areaId="trabalho"  transactions={transactions} />;
-      case 'casa':      return <AreaView areaId="casa"      transactions={transactions} />;
-      case 'aleatorio': return <AreaView areaId="aleatorio" transactions={transactions} />;
+      case 'trabalho':  return <AreaView areaId="trabalho"  transactions={transactions} onAdd={() => setIsModalOpen(true)} />;
+      case 'casa':      return <AreaView areaId="casa"      transactions={transactions} onAdd={() => setIsModalOpen(true)} />;
+      case 'aleatorio': return <AreaView areaId="aleatorio" transactions={transactions} onAdd={() => setIsModalOpen(true)} />;
       case 'relatorio': return <RelatorioView transactions={transactions} workDays={allDays} />;
       case 'accounts':  return <AccountsView />;
       case 'notes':     return <NotesView />;
@@ -47,7 +47,7 @@ function App() {
       <NovaTransacaoModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={addTransaction}
+        onSave={(tx, when) => addTransaction(tx, when)}
         settings={settings}
         onGoToSettings={() => setActiveTab('config')}
       />

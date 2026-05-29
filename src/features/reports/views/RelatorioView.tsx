@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { TrendingUp, TrendingDown, Wallet, ChevronDown, ChevronUp, CalendarDays } from 'lucide-react';
-import { type Transaction, type WorkDay, CATEGORY_META } from '@/shared/types/transaction';
+import { type Transaction,  CATEGORY_META } from '@/shared/types/transaction';
+import { type WorkDay } from '@/shared/types/workDay';
 import { formatBRL, formatFullDate, formatShortDate, toLocalDate } from '@/shared/lib/format';
 import { TransactionItem } from '@/shared/components/TransactionItem';
 

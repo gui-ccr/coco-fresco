@@ -1,22 +1,37 @@
 import { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
-import { X, ChevronRight, Zap, AlertTriangle, Check, Settings } from 'lucide-react';
+import { X, ChevronRight, Zap, AlertTriangle, Check, Settings, CalendarDays } from 'lucide-react';
 import { type Category, type Transaction, CATEGORY_META, QUICK_SALE_CATS, REPO_CATS } from '@/shared/types/transaction';
+import { type AreaId } from '@/shared/types/area';
 import { type AppSettings } from '@/shared/types/settings';
 import { formatBRL } from '@/shared/lib/format';
 import { EXPENSE_GROUPS } from './constants/expenseGroups';
 
 type Step = 'category' | 'quick_qty' | 'quantity' | 'amount' | 'confirm';
 
+function todayValue(): string {
+  return new Date().toLocaleDateString('en-CA');
+}
+
 interface Props {
   isOpen:          boolean;
   onClose:         () => void;
-  onSave:          (tx: Omit<Transaction, 'id' | 'when'>) => void;
+  onSave:          (tx: Omit<Transaction, 'id' | 'when'>, when: string) => void;
   settings:        AppSettings;
+  areaFilter?:     AreaId;
   onGoToSettings?: () => void;
 }
 
-export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSettings }: Props) {
+export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, areaFilter, onGoToSettings }: Props) {
+  const showDatePicker   = !!areaFilter;
+  const showQuickSales   = !areaFilter || areaFilter === 'trabalho';
+  const visibleGroups    = areaFilter
+    ? EXPENSE_GROUPS.filter(g =>
+        areaFilter === 'trabalho'  ? g.label === 'REPOSIÇÃO DE ESTOQUE' :
+        areaFilter === 'casa'      ? g.label === 'CASA'                 :
+                                     g.label === 'GASTOS EXTRAS'
+      )
+    : EXPENSE_GROUPS;
   const [mounted, setMounted]         = useState(isOpen);
   const [step, setStep]               = useState<Step>('category');
   const [selectedCat, setSelectedCat] = useState<Category | null>(null);
@@ -24,6 +39,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
   const [quantity, setQuantity]       = useState('');
   const [amount, setAmount]           = useState('');
   const [note, setNote]               = useState('');
+  const [selectedDate, setSelectedDate] = useState(todayValue());
 
   const sheetRef    = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -35,6 +51,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
     setQuantity('');
     setAmount('');
     setNote('');
+    setSelectedDate(todayValue());
   }
 
   if (isOpen && !mounted) setMounted(true);
@@ -90,7 +107,9 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
     const val = getFinalAmount();
     if (!selectedCat || val <= 0) return;
     const autoNote = buildAutoNote();
-    onSave({ cat: selectedCat, value: val, note: note || autoNote || undefined });
+    const dateStr = showDatePicker ? selectedDate : todayValue();
+    const when = new Date(dateStr + 'T12:00:00').toISOString();
+    onSave({ cat: selectedCat, value: val, note: note || autoNote || undefined }, when);
     onClose();
   }
 
@@ -206,40 +225,42 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
         {/* ── STEP 1 — Escolher categoria ── */}
         {step === 'category' && (
           <div className="flex-1 overflow-y-auto px-5 pb-8">
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-3">
-                <Zap size={13} style={{ color: '#059669' }} />
-                <p className="text-[10px] font-black tracking-widest uppercase" style={{ color: '#059669' }}>
-                  VENDA RÁPIDA — 1 TOQUE
-                </p>
+            {showQuickSales && (
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Zap size={13} style={{ color: '#059669' }} />
+                  <p className="text-[10px] font-black tracking-widest uppercase" style={{ color: '#059669' }}>
+                    VENDA RÁPIDA — 1 TOQUE
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {QUICK_SALE_CATS.map(cat => {
+                    const m     = CATEGORY_META[cat];
+                    const preco = settings.precoVenda[cat as keyof AppSettings['precoVenda']];
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => handleCatSelect(cat)}
+                        className="relative flex flex-col items-start rounded-2xl p-4 text-left active:scale-95 transition-all duration-100"
+                        style={{ background: 'linear-gradient(145deg,#ecfdf5,#d1fae5)', border: '2px solid #6ee7b7' }}
+                      >
+                        <span
+                          className="absolute top-2.5 right-2.5 text-[9px] font-black uppercase tracking-wider rounded-full px-1.5 py-0.5"
+                          style={{ background: '#059669', color: '#fff' }}
+                        >1 tap</span>
+                        <span className="text-3xl mb-2 leading-none">{m.emoji}</span>
+                        <p className="text-sm font-black leading-tight" style={{ color: '#065f46' }}>{m.label}</p>
+                        <p className="text-xl font-black tabular-nums mt-0.5" style={{ color: '#059669' }}>
+                          {formatBRL(preco)}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                {QUICK_SALE_CATS.map(cat => {
-                  const m     = CATEGORY_META[cat];
-                  const preco = settings.precoVenda[cat as keyof AppSettings['precoVenda']];
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => handleCatSelect(cat)}
-                      className="relative flex flex-col items-start rounded-2xl p-4 text-left active:scale-95 transition-all duration-100"
-                      style={{ background: 'linear-gradient(145deg,#ecfdf5,#d1fae5)', border: '2px solid #6ee7b7' }}
-                    >
-                      <span
-                        className="absolute top-2.5 right-2.5 text-[9px] font-black uppercase tracking-wider rounded-full px-1.5 py-0.5"
-                        style={{ background: '#059669', color: '#fff' }}
-                      >1 tap</span>
-                      <span className="text-3xl mb-2 leading-none">{m.emoji}</span>
-                      <p className="text-sm font-black leading-tight" style={{ color: '#065f46' }}>{m.label}</p>
-                      <p className="text-xl font-black tabular-nums mt-0.5" style={{ color: '#059669' }}>
-                        {formatBRL(preco)}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            )}
 
-            {EXPENSE_GROUPS.map(group => (
+            {visibleGroups.map(group => (
               <div key={group.label} className="mb-5">
                 <p className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color: '#94a3b8' }}>
                   {group.label}
@@ -544,6 +565,21 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
               >
                 {meta.isIncome ? '+' : '−'} {formatBRL(finalAmount)}
               </p>
+            </div>
+
+            <div className="mb-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <CalendarDays size={12} style={{ color: '#94a3b8' }} />
+                <p className="text-[10px] font-black tracking-widest uppercase" style={{ color: '#94a3b8' }}>Data</p>
+              </div>
+              <input
+                type="date"
+                value={selectedDate}
+                max={todayValue()}
+                onChange={e => setSelectedDate(e.target.value)}
+                className="w-full rounded-xl px-4 py-3 text-sm font-semibold outline-none"
+                style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', color: '#0f172a', fontFamily: 'inherit' }}
+              />
             </div>
 
             <input

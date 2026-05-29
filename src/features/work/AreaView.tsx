@@ -1,15 +1,17 @@
 import { useMemo } from 'react';
-import { TrendingUp, TrendingDown, PackageOpen } from 'lucide-react';
-import { type Transaction, type AreaId, CATEGORY_META, AREA_META } from '@/shared/types/transaction';
+import { TrendingUp, TrendingDown, PackageOpen, Plus } from 'lucide-react';
+import { type Transaction, CATEGORY_META } from '@/shared/types/transaction';
+import { type AreaId, AREA_META } from '@/shared/types/area';
 import { formatBRL } from '@/shared/lib/format';
 import { TransactionItem } from '@/shared/components/TransactionItem';
 
 interface Props {
   areaId: AreaId;
   transactions: Transaction[];
+  onAdd?: () => void;
 }
 
-export function AreaView({ areaId, transactions }: Props) {
+export function AreaView({ areaId, transactions, onAdd }: Props) {
   const areaMeta = AREA_META[areaId];
 
   const areaTransactions = useMemo(
@@ -59,12 +61,26 @@ export function AreaView({ areaId, transactions }: Props) {
           }}
         />
         <div className="relative z-10">
-          <p className="text-white/60 text-sm font-semibold mb-1 capitalize">
-            {areaId === 'aleatorio' ? 'gastos extras' : areaId}
-          </p>
-          <h1 className="text-white text-2xl font-black leading-tight">
-            {areaMeta.emoji} {areaMeta.label}
-          </h1>
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-white/60 text-sm font-semibold mb-1 capitalize">
+                {areaId === 'aleatorio' ? 'gastos extras' : areaId}
+              </p>
+              <h1 className="text-white text-2xl font-black leading-tight">
+                {areaMeta.emoji} {areaMeta.label}
+              </h1>
+            </div>
+            {onAdd && (
+              <button
+                onClick={onAdd}
+                className="flex items-center gap-1.5 rounded-2xl px-4 py-2.5 active:scale-95 transition-all duration-100"
+                style={{ background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', backdropFilter: 'blur(6px)' }}
+              >
+                <Plus size={15} className="text-white" strokeWidth={2.8} />
+                <span className="text-xs font-black text-white">Adicionar</span>
+              </button>
+            )}
+          </div>
 
           {/* Summary row */}
           <div className="mt-5 grid grid-cols-2 gap-3">

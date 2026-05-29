@@ -1,11 +1,13 @@
+import { type AreaId } from './area';
+
+export type { AreaId };
+
 export type Category =
   | 'venda_copo' | 'venda_g300' | 'venda_g500' | 'venda_g1l'
   | 'venda'
   | 'coco' | 'gelo' | 'copo' | 'garrafa300' | 'garrafa500' | 'garrafa1l'
   | 'luz' | 'agua' | 'aluguel' | 'mercado'
   | 'lanche' | 'compra' | 'outros';
-
-export type AreaId = 'trabalho' | 'casa' | 'aleatorio';
 
 export interface Transaction {
   id: string;
@@ -46,18 +48,5 @@ export const CATEGORY_META: Record<Category, CategoryMeta> = {
   outros:     { label: 'Outros',        emoji: '✨', area: 'aleatorio', isIncome: false, isRepo: false, color: '#db2777', bg: '#fce7f3' },
 };
 
-export const AREA_META: Record<AreaId, { label: string; emoji: string; color: string; gradientFrom: string; gradientTo: string }> = {
-  trabalho:  { label: 'Trabalho',      emoji: '🥥', color: '#059669', gradientFrom: '#064e3b', gradientTo: '#065f46' },
-  casa:      { label: 'Casa',          emoji: '🏠', color: '#dc2626', gradientFrom: '#991b1b', gradientTo: '#b91c1c' },
-  aleatorio: { label: 'Gastos Extras', emoji: '🎲', color: '#db2777', gradientFrom: '#831843', gradientTo: '#9d174d' },
-};
-
 export const QUICK_SALE_CATS: Category[] = ['venda_copo', 'venda_g300', 'venda_g500', 'venda_g1l'];
 export const REPO_CATS:       Category[] = ['coco', 'gelo', 'copo', 'garrafa300', 'garrafa500', 'garrafa1l'];
-
-export interface WorkDay {
-  id: string;
-  date: string;       // YYYY-MM-DD
-  capitalInit: number;
-  createdAt: string;
-}

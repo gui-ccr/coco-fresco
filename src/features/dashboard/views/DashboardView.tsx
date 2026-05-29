@@ -4,9 +4,10 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { gsap } from "gsap";
 import {
   type Transaction,
-  type WorkDay,
   CATEGORY_META,
 } from "@/shared/types/transaction";
+
+import { type WorkDay } from '@/shared/types/workDay';
 import {
   formatBRL,
   greeting,

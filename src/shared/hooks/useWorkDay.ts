@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { WorkDay } from '@/shared/types/transaction';
+import type { WorkDay } from '@/shared/types/workDay';
 import { todayDate } from '@/shared/lib/format';
 import { fetchWorkDays, insertWorkDay } from '@/shared/services/workDayService';
 

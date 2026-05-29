@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { TrendingUp, TrendingDown, AlertCircle, Wallet } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import { type Transaction, type WorkDay, CATEGORY_META } from '@/shared/types/transaction';
+import { type Transaction, CATEGORY_META } from '@/shared/types/transaction';
+import { type WorkDay } from '@/shared/types/workDay';
 import { formatBRL, greeting, toLocalDate, todayDate } from '@/shared/lib/format';
 import { TransactionItem } from '@/shared/components/TransactionItem';
 import { AnimatedTitle } from './components/AnimatedTitle';

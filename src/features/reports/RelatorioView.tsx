@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { TrendingUp, TrendingDown, Wallet, CalendarDays } from 'lucide-react';
-import { type Transaction, type WorkDay } from '@/shared/types/transaction';
+import { type Transaction } from '@/shared/types/transaction';
+import { type WorkDay } from '@/shared/types/workDay';
 import { formatBRL } from '@/shared/lib/format';
 import { DayCard, buildSummaries } from './components/DayCard';
 

@@ -10,7 +10,7 @@ interface UseTransactionsReturn {
   transactions: Transaction[];
   loading: boolean;
   error: string | null;
-  addTransaction: (tx: Omit<Transaction, 'id' | 'when'>) => Promise<void>;
+  addTransaction: (tx: Omit<Transaction, 'id' | 'when'>, when?: string) => Promise<void>;
   removeTransaction: (id: string) => Promise<void>;
 }
 
@@ -40,15 +40,17 @@ export function useTransactions(): UseTransactionsReturn {
       .finally(() => setLoading(false));
   }, []);
 
-  const addTransaction = useCallback(async (tx: Omit<Transaction, 'id' | 'when'>) => {
+  const addTransaction = useCallback(async (tx: Omit<Transaction, 'id' | 'when'>, when?: string) => {
     if (!IS_CONFIGURED) {
       console.warn('Supabase não configurado');
       return;
     }
 
     try {
-      const saved = await insertTransaction(tx);
-      setTransactions(prev => [saved, ...prev]);
+      const saved = await insertTransaction({ ...tx, when });
+      setTransactions(prev =>
+        [saved, ...prev].sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime())
+      );
     } catch (err) {
       console.error('Supabase insert falhou:', err);
       throw err;
