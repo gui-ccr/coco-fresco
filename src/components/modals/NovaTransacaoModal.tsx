@@ -35,7 +35,7 @@ interface Props {
 }
 
 export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSettings }: Props) {
-  const [mounted, setMounted]         = useState(false);
+  const [mounted, setMounted]         = useState(isOpen);
   const [step, setStep]               = useState<Step>('category');
   const [selectedCat, setSelectedCat] = useState<Category | null>(null);
   const [quickQty, setQuickQty]       = useState('1'); // quantidade venda rápida
@@ -46,12 +46,30 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
   const sheetRef    = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
 
+  function resetState() {
+    setStep('category');
+    setSelectedCat(null);
+    setQuickQty('1');
+    setQuantity('');
+    setAmount('');
+    setNote('');
+  }
+
+  if (isOpen && !mounted) {
+    setMounted(true);
+  }
+
   // ── Animação de entrada/saída ──────────────────────────────────────────
   useEffect(() => {
-    if (isOpen) { setMounted(true); return; }
+    if (isOpen) return;
+
     const sheet    = sheetRef.current;
     const backdrop = backdropRef.current;
-    if (!sheet) { setMounted(false); return; }
+    if (!sheet) {
+      setMounted(false);
+      return;
+    }
+
     gsap.to(sheet,    { y: '100%', duration: 0.35, ease: 'power3.in' });
     gsap.to(backdrop, {
       opacity: 0, duration: 0.28,
@@ -77,15 +95,6 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
   }, [mounted]);
 
   if (!mounted) return null;
-
-  function resetState() {
-    setStep('category');
-    setSelectedCat(null);
-    setQuickQty('1');
-    setQuantity('');
-    setAmount('');
-    setNote('');
-  }
 
   // ── Navegação entre steps ──────────────────────────────────────────────
   function handleCatSelect(cat: Category) {
@@ -199,12 +208,12 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
         }}
       >
         {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+        <div className="flex justify-center pt-3 pb-1 shrink-0">
           <div className="w-10 h-1.5 rounded-full" style={{ background: '#e2e8f0' }} />
         </div>
 
         {/* Header row */}
-        <div className="flex items-center justify-between px-5 py-3 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-3 shrink-0">
           <div>
             <p className="text-[10px] font-black tracking-widest uppercase" style={{ color: '#94a3b8' }}>
               {step === 'category'  ? 'O que foi?' :
@@ -305,7 +314,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
             STEP 1B — Quantidade de venda rápida
         ══════════════════════════════════════════════════════ */}
         {step === 'quick_qty' && meta && (
-          <div className="flex flex-col pb-6 flex-shrink-0">
+          <div className="flex flex-col pb-6 shrink-0">
 
             {/* Visor */}
             <div
@@ -354,7 +363,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
 
             {/* Numpad completo */}
             <div className="px-5 grid grid-cols-3 gap-2 mb-4">
-              {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((key, i) => (
+              {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((key) => (
                 key === '' ? <div key="spacer" /> : (
                   <button
                     key={key}
@@ -383,7 +392,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
               <button
                 onClick={() => setStep('confirm')}
                 disabled={quickQtyInt <= 0}
-                className="flex-[2] h-14 rounded-2xl text-sm font-bold active:scale-95 disabled:opacity-40 transition-all"
+                className="flex-2 h-14 rounded-2xl text-sm font-bold active:scale-95 disabled:opacity-40 transition-all"
                 style={{
                   background: 'linear-gradient(135deg, #10b981, #059669)',
                   color: '#fff', fontFamily: 'inherit',
@@ -400,7 +409,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
             STEP 2A — Quantidade (reposição)
         ══════════════════════════════════════════════════════ */}
         {step === 'quantity' && meta && (
-          <div className="flex flex-col pb-6 flex-shrink-0">
+          <div className="flex flex-col pb-6 shrink-0">
 
             {/* Aviso de custo desconhecido */}
             {costUnknown && (
@@ -457,7 +466,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
 
             {/* Numpad inteiro */}
             <div className="px-5 grid grid-cols-3 gap-2 mb-4">
-              {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((key, i) => (
+              {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((key) => (
                 key === '' ? (
                   <div key="spacer" />
                 ) : (
@@ -488,7 +497,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
               <button
                 onClick={handleQuantityNext}
                 disabled={!!costUnknown || !quantity || qtyInt <= 0}
-                className="flex-[2] h-14 rounded-2xl text-sm font-bold active:scale-95 disabled:opacity-40 transition-all"
+                className="flex-2 h-14 rounded-2xl text-sm font-bold active:scale-95 disabled:opacity-40 transition-all"
                 style={{
                   background: `linear-gradient(135deg, ${meta.color}dd, ${meta.color})`,
                   color: '#fff', fontFamily: 'inherit',
@@ -505,7 +514,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
             STEP 2B — Valor manual (despesas não-reposição)
         ══════════════════════════════════════════════════════ */}
         {step === 'amount' && meta && (
-          <div className="flex flex-col pb-6 flex-shrink-0">
+          <div className="flex flex-col pb-6 shrink-0">
             {/* Visor */}
             <div
               className="mx-5 mb-4 rounded-2xl flex flex-col items-center justify-center py-5"
@@ -542,7 +551,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
               <button
                 onClick={handleAmountNext}
                 disabled={!amount || parseFloat(amount.replace(',','.')) <= 0}
-                className="flex-[2] h-14 rounded-2xl text-sm font-bold active:scale-95 disabled:opacity-40 transition-all"
+                className="flex-2 h-14 rounded-2xl text-sm font-bold active:scale-95 disabled:opacity-40 transition-all"
                 style={{
                   background: `linear-gradient(135deg, ${meta.color}dd, ${meta.color})`,
                   color: '#fff', fontFamily: 'inherit',
@@ -559,7 +568,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
             STEP 3 — Confirmação (todas as rotas chegam aqui)
         ══════════════════════════════════════════════════════ */}
         {step === 'confirm' && meta && (
-          <div className="flex flex-col pb-6 flex-shrink-0 px-5">
+          <div className="flex flex-col pb-6 shrink-0 px-5">
 
             {/* Card recibo */}
             <div
@@ -572,7 +581,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
               {/* Categoria */}
               <div className="flex items-center gap-3 mb-4">
                 <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0"
                   style={{ background: 'rgba(255,255,255,0.7)' }}
                 >
                   {meta.emoji}
@@ -645,7 +654,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, onGoToSe
               <button
                 onClick={handleConfirm}
                 disabled={finalAmount <= 0}
-                className="flex-[2] h-14 rounded-2xl text-sm font-bold active:scale-95 disabled:opacity-40 transition-all flex items-center justify-center gap-2"
+                className="flex-2 h-14 rounded-2xl text-sm font-bold active:scale-95 disabled:opacity-40 transition-all flex items-center justify-center gap-2"
                 style={{
                   background: meta.isIncome
                     ? 'linear-gradient(135deg,#10b981,#059669)'
