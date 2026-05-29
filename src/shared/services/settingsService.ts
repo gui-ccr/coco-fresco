@@ -1,5 +1,5 @@
 import { supabase } from '@/config/supabase';
-import type { AppSettings } from '@/shared/hooks/useSettings';
+import type { AppSettings } from '@/shared/types/settings';
 
 export async function fetchSettings(): Promise<AppSettings | null> {
   const { data, error } = await supabase

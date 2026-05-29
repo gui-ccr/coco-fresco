@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { AppLayout } from '@/components/layout/AppLayout';
-import { NovaTransacaoModal } from '@/components/modals/NovaTransacaoModal';
-import { IniciarDiaModal } from '@/components/modals/IniciarDiaModal';
-import { DashboardView } from '@/features/dashboard/views/DashboardView';
-import { AreaView } from '@/features/work/views/AreaView';
-import { SettingsView } from '@/features/settings/views/SettingsView';
-import { RelatorioView } from '@/features/reports/views/RelatorioView';
+import { AppLayout } from '@/layout/AppLayout';
+import { NovaTransacaoModal } from '@/features/transactions/NovaTransacaoModal';
+import { IniciarDiaModal } from '@/features/work-day/IniciarDiaModal';
+import { DashboardView } from '@/features/dashboard/DashboardView';
+import { AreaView } from '@/features/work/AreaView';
+import { SettingsView } from '@/features/settings/SettingsView';
+import { RelatorioView } from '@/features/reports/RelatorioView';
 import { useTransactions } from '@/shared/hooks/useTransactions';
 import { useSettings } from '@/shared/hooks/useSettings';
 import { useWorkDay } from '@/shared/hooks/useWorkDay';
@@ -18,23 +18,15 @@ function App() {
   const { settings, updateSettings }     = useSettings();
   const { today, allDays, needsInit, loading: dayLoading, initDay } = useWorkDay();
 
-  // Filtra transações para as views de área (todas — não apenas hoje)
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return <DashboardView transactions={transactions} workDay={today} />;
-      case 'trabalho':
-        return <AreaView areaId="trabalho"  transactions={transactions} />;
-      case 'casa':
-        return <AreaView areaId="casa"      transactions={transactions} />;
-      case 'aleatorio':
-        return <AreaView areaId="aleatorio" transactions={transactions} />;
-      case 'relatorio':
-        return <RelatorioView transactions={transactions} workDays={allDays} />;
-      case 'config':
-        return <SettingsView settings={settings} updateSettings={updateSettings} />;
-      default:
-        return <DashboardView transactions={transactions} workDay={today} />;
+      case 'dashboard': return <DashboardView transactions={transactions} workDay={today} />;
+      case 'trabalho':  return <AreaView areaId="trabalho"  transactions={transactions} />;
+      case 'casa':      return <AreaView areaId="casa"      transactions={transactions} />;
+      case 'aleatorio': return <AreaView areaId="aleatorio" transactions={transactions} />;
+      case 'relatorio': return <RelatorioView transactions={transactions} workDays={allDays} />;
+      case 'config':    return <SettingsView settings={settings} updateSettings={updateSettings} />;
+      default:          return <DashboardView transactions={transactions} workDay={today} />;
     }
   };
 
@@ -56,7 +48,6 @@ function App() {
         onGoToSettings={() => setActiveTab('config')}
       />
 
-      {/* Modal de início de dia — aparece quando o dia não foi iniciado */}
       {!dayLoading && needsInit && (
         <IniciarDiaModal onConfirm={initDay} />
       )}
