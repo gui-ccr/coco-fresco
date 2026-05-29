@@ -1,7 +1,8 @@
-import { type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Plus } from 'lucide-react';
 import { BottomNav, TAB_ORDER } from './BottomNav';
 import { PageTransition } from './PageTransition';
+import { MenuDrawer } from './MenuDrawer';
 
 interface AppLayoutProps {
   activeTab:    string;
@@ -11,7 +12,8 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ activeTab, setActiveTab, onOpenModal, children }: AppLayoutProps) {
-  const showFab = activeTab !== 'config';
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const showFab = !['config', 'accounts', 'notes'].includes(activeTab) && !isDrawerOpen;
 
   return (
     <div className="min-h-screen flex justify-center" style={{ background: '#f0f7f4' }}>
@@ -42,7 +44,18 @@ export function AppLayout({ activeTab, setActiveTab, onOpenModal, children }: Ap
           </button>
         )}
 
-        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+        <BottomNav
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onOpenMenu={() => setIsDrawerOpen(true)}
+        />
+
+        <MenuDrawer
+          isOpen={isDrawerOpen}
+          activeTab={activeTab}
+          onClose={() => setIsDrawerOpen(false)}
+          onTabChange={setActiveTab}
+        />
       </div>
     </div>
   );

@@ -1,23 +1,38 @@
-import { LayoutDashboard, Briefcase, Home, ShoppingBag, BarChart2, Settings } from 'lucide-react';
+import { LayoutDashboard, Briefcase, Home, ShoppingBag, Menu } from 'lucide-react';
 
-export const NAV_TABS = [
-  { id: 'dashboard',  label: 'Resumo',    Icon: LayoutDashboard, isSecondary: false },
-  { id: 'trabalho',   label: 'Trabalho',  Icon: Briefcase,       isSecondary: false },
-  { id: 'casa',       label: 'Casa',      Icon: Home,            isSecondary: false },
-  { id: 'aleatorio',  label: 'Gastos',    Icon: ShoppingBag,     isSecondary: false },
-  { id: 'relatorio',  label: 'Histórico', Icon: BarChart2,       isSecondary: true  },
-  { id: 'config',     label: 'Ajustes',   Icon: Settings,        isSecondary: true  },
+const PRIMARY_TABS = [
+  { id: 'dashboard', label: 'Resumo',   Icon: LayoutDashboard, color: '#059669' },
+  { id: 'trabalho',  label: 'Trabalho', Icon: Briefcase,       color: '#f97316' },
+  { id: 'casa',      label: 'Casa',     Icon: Home,            color: '#dc2626' },
+  { id: 'aleatorio', label: 'Gastos',   Icon: ShoppingBag,     color: '#db2777' },
 ] as const;
 
-export type TabId = (typeof NAV_TABS)[number]['id'];
-export const TAB_ORDER = NAV_TABS.map(t => t.id) as string[];
+// Active color for each secondary tab — matches their page header gradient
+const SECONDARY_COLORS: Record<string, string> = {
+  relatorio: '#3730a3',
+  accounts:  '#7c3aed',
+  notes:     '#d97706',
+  config:    '#4f46e5',
+};
+
+export const SECONDARY_TAB_IDS = Object.keys(SECONDARY_COLORS);
+
+// Full order for PageTransition direction calculation
+export const TAB_ORDER: string[] = [
+  'dashboard', 'trabalho', 'casa', 'aleatorio',
+  'relatorio', 'accounts', 'notes', 'config',
+];
 
 interface BottomNavProps {
-  activeTab: string;
+  activeTab:   string;
   onTabChange: (id: string) => void;
+  onOpenMenu:  () => void;
 }
 
-export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
+export function BottomNav({ activeTab, onTabChange, onOpenMenu }: BottomNavProps) {
+  const menuColor    = SECONDARY_COLORS[activeTab] ?? '#7c3aed';
+  const isMenuActive = SECONDARY_TAB_IDS.includes(activeTab);
+
   return (
     <nav
       className="fixed bottom-0 w-full max-w-md z-40 flex items-stretch"
@@ -28,10 +43,8 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
         height:     '60px',
       }}
     >
-      {NAV_TABS.map(({ id, label, Icon, isSecondary }) => {
-        const active      = activeTab === id;
-        const activeColor = isSecondary ? '#4f46e5' : '#059669';
-
+      {PRIMARY_TABS.map(({ id, label, Icon, color }) => {
+        const active = activeTab === id;
         return (
           <button
             key={id}
@@ -40,25 +53,50 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
             style={{ flex: 1, paddingBottom: '2px' }}
           >
             <Icon
-              size={isSecondary ? 17 : 19}
+              size={19}
               strokeWidth={active ? 2.5 : 1.8}
-              style={{ color: active ? activeColor : '#94a3b8' }}
+              style={{ color: active ? color : '#94a3b8' }}
             />
             <span
               className="text-[9px] font-bold tracking-wide"
-              style={{ color: active ? activeColor : '#94a3b8' }}
+              style={{ color: active ? color : '#94a3b8' }}
             >
               {label}
             </span>
             {active && (
               <span
                 className="absolute bottom-0 rounded-full"
-                style={{ width: 24, height: 2, background: activeColor }}
+                style={{ width: 24, height: 2, background: color }}
               />
             )}
           </button>
         );
       })}
+
+      {/* Hamburger — secondary navigation */}
+      <button
+        onClick={onOpenMenu}
+        className="flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 relative"
+        style={{ flex: 1, paddingBottom: '2px' }}
+      >
+        <Menu
+          size={19}
+          strokeWidth={isMenuActive ? 2.5 : 1.8}
+          style={{ color: isMenuActive ? menuColor : '#94a3b8' }}
+        />
+        <span
+          className="text-[9px] font-bold tracking-wide"
+          style={{ color: isMenuActive ? menuColor : '#94a3b8' }}
+        >
+          Mais
+        </span>
+        {isMenuActive && (
+          <span
+            className="absolute bottom-0 rounded-full"
+            style={{ width: 24, height: 2, background: menuColor }}
+          />
+        )}
+      </button>
     </nav>
   );
 }

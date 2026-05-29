@@ -6,6 +6,8 @@ import { DashboardView } from '@/features/dashboard/DashboardView';
 import { AreaView } from '@/features/work/AreaView';
 import { SettingsView } from '@/features/settings/SettingsView';
 import { RelatorioView } from '@/features/reports/RelatorioView';
+import { AccountsView } from '@/features/accounts/AccountsView';
+import { NotesView } from '@/features/notes/NotesView';
 import { useTransactions } from '@/shared/hooks/useTransactions';
 import { useSettings } from '@/shared/hooks/useSettings';
 import { useWorkDay } from '@/shared/hooks/useWorkDay';
@@ -25,6 +27,8 @@ function App() {
       case 'casa':      return <AreaView areaId="casa"      transactions={transactions} />;
       case 'aleatorio': return <AreaView areaId="aleatorio" transactions={transactions} />;
       case 'relatorio': return <RelatorioView transactions={transactions} workDays={allDays} />;
+      case 'accounts':  return <AccountsView />;
+      case 'notes':     return <NotesView />;
       case 'config':    return <SettingsView settings={settings} updateSettings={updateSettings} />;
       default:          return <DashboardView transactions={transactions} workDay={today} />;
     }

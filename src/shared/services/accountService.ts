@@ -1,0 +1,96 @@
+import { supabase } from '@/config/supabase';
+import { type Account, type AccountType, type Recurrence } from '@/shared/types/account';
+
+type AccountRow = {
+  id:         string;
+  name:       string;
+  type:       string;
+  amount:     number;
+  due_date:   string | null;
+  notes:      string | null;
+  is_paid:    boolean;
+  recurrence: string;
+  group_id:   string | null;
+  created_at: string;
+};
+
+const SELECT_COLS = 'id, name, type, amount, due_date, notes, is_paid, recurrence, group_id, created_at';
+
+function rowToAccount(row: AccountRow): Account {
+  return {
+    id:         row.id,
+    name:       row.name,
+    type:       row.type       as AccountType,
+    amount:     Number(row.amount),
+    dueDate:    row.due_date   ?? undefined,
+    notes:      row.notes      ?? undefined,
+    isPaid:     row.is_paid,
+    recurrence: row.recurrence as Recurrence,
+    groupId:    row.group_id   ?? undefined,
+    createdAt:  row.created_at,
+  };
+}
+
+function accountToRow(a: Account) {
+  return {
+    id:         a.id,
+    name:       a.name,
+    type:       a.type,
+    amount:     a.amount,
+    due_date:   a.dueDate   ?? null,
+    notes:      a.notes     ?? null,
+    is_paid:    a.isPaid,
+    recurrence: a.recurrence,
+    group_id:   a.groupId   ?? null,
+  };
+}
+
+export async function fetchAccounts(): Promise<Account[]> {
+  const { data, error } = await supabase
+    .from('accounts')
+    .select(SELECT_COLS)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []).map(rowToAccount);
+}
+
+export async function insertAccounts(accounts: Account[]): Promise<Account[]> {
+  const { data, error } = await supabase
+    .from('accounts')
+    .insert(accounts.map(accountToRow))
+    .select(SELECT_COLS);
+
+  if (error) throw error;
+  return (data ?? []).map(rowToAccount);
+}
+
+export async function patchAccount(
+  id: string,
+  patch: Partial<{
+    name:       string;
+    type:       AccountType;
+    amount:     number;
+    dueDate:    string | undefined;
+    notes:      string | undefined;
+    isPaid:     boolean;
+    recurrence: Recurrence;
+  }>
+): Promise<void> {
+  const row: Record<string, unknown> = {};
+  if ('name'       in patch) row.name       = patch.name;
+  if ('type'       in patch) row.type       = patch.type;
+  if ('amount'     in patch) row.amount     = patch.amount;
+  if ('dueDate'    in patch) row.due_date   = patch.dueDate ?? null;
+  if ('notes'      in patch) row.notes      = patch.notes  ?? null;
+  if ('isPaid'     in patch) row.is_paid    = patch.isPaid;
+  if ('recurrence' in patch) row.recurrence = patch.recurrence;
+
+  const { error } = await supabase.from('accounts').update(row).eq('id', id);
+  if (error) throw error;
+}
+
+export async function removeAccount(id: string): Promise<void> {
+  const { error } = await supabase.from('accounts').delete().eq('id', id);
+  if (error) throw error;
+}
