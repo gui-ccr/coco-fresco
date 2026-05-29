@@ -1,73 +1,66 @@
-# React + TypeScript + Vite
+# Coco Fresco 🥥
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Um sistema fechado e exclusivo, desenvolvido com muito carinho sob medida para minha mãe gerenciar a logística e a gestão financeira diária do seu negócio de Água de Coco.
 
-Currently, two official plugins are available:
+> ⚠️ **Aviso:** Este é um projeto de uso estritamente pessoal e privado.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 📋 Funcionalidades
 
-## React Compiler
+- **Dashboard Diário**: Acompanhe o lucro, despesas do negócio, despesas de casa e outros gastos de forma visualmente rica e em tempo real.
+- **Gestão de Transações**: Adicione vendas rápidas ou despesas (como reposição de estoque) com layout focado em telas móveis e numpad customizado integrado de carregamento veloz.
+- **Categorização Automática**: Controle em tempo real dividido por categorias (Ex: Reposição de Estoque, Gasto Fixo de Casa, Gasto Aleatório).
+- **Dias de Trabalho**: Inicialização de dia de forma automatizada com abertura de caixa ("fundo de troco") personalizável com base no histórico anterior.
+- **Relatórios Visuais**: Gráficos modernos (via Recharts) das métricas de vendas, proporção de despesas e lucros e histórico em lista.
+- **Painel de Configurações Dinâmicas**: Ajuste em tempo real dos custos unitários (preço de custo do espeto/coco, garrafas) e preços de venda.
+- **Banco de dados Remoto**: Todas as despesas persistem em nuvem via Supabase.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Tecnologias Utilizadas
 
-## Expanding the ESLint configuration
+- **Frontend**: [React 18](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) + [Vite](https://vitejs.dev/)
+- **Estilização**: [Tailwind CSS v4](https://tailwindcss.com/) focando em classes utilitárias e simulação de app nativo (ocultação de scrollbar configurado globalmente).
+- **Banco de Dados / Backend**: [Supabase](https://supabase.com/) (para realtime sync e persistência SQL cloud).
+- **Animações (UX)**: [GSAP](https://gsap.com/) para animações ultra performáticas em modais, sheet containers de numpads e tipografia móvel.
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Gráficos**: [Recharts](https://recharts.org/)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🚀 Como Executar o Projeto
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 1. Pré-requisitos
+- **Node.js** (versão 18+) 
+- **Gerenciador de pacotes** de NPM ou Yarn
+- Projeto provisionado no Supabase para conexão Postgres
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 2. Clonando e Instalando
+```bash
+# Clone o repositório
+git clone https://github.com/gui-ccr/coco-fresco.git
+cd coco-fresco
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Instale todas as dependências
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 3. Variáveis de Ambiente
+Crie um arquivo `.env.local` na raiz contendo seu acesso ao Supabase:
+```env
+VITE_SUPABASE_URL=sua_url_do_projeto
+VITE_SUPABASE_ANON_KEY=sua_apiKey_publica_do_projeto
 ```
+
+### 4. Iniciando Modo de Desenvolvimento
+```bash
+npm run dev
+```
+Acesse a respectiva porta disponibilizada pelo Vite no console `http://localhost:5173` ou equivalente em seu navegador.
+
+## 📦 Build para Produção
+Para compilar a versão final para publicar no ambiente de produção:
+```bash
+npm run build
+```
+
+---
+*Desenvolvido com ❤️ pelo **filho coruja ([Gui-ccr])** exclusivamente para sua mãe! 👩‍👦🥥*
+
+---
+*Desenvolvido individualmente por **[Gui-ccr]** 📱🥥*
