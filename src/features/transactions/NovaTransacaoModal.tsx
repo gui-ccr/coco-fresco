@@ -175,7 +175,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, areaFilt
       <div
         ref={backdropRef}
         className="fixed inset-0 z-50"
-        style={{ background: 'rgba(0,0,0,0.52)', backdropFilter: 'blur(3px)' }}
+        style={{ background: 'rgba(0,0,0,0.55)' }}
         onClick={onClose}
       />
 
@@ -221,6 +221,29 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, areaFilt
             <X size={17} style={{ color: '#64748b' }} />
           </button>
         </div>
+
+        {/* Date selector — visible in area mode on all steps except confirm (confirm has its own) */}
+        {showDatePicker && step !== 'confirm' && (
+          <div className="px-5 pb-3 shrink-0">
+            <div
+              className="flex items-center gap-2 rounded-xl px-3 py-2"
+              style={{ background: '#f0f9ff', border: '1.5px solid #bae6fd' }}
+            >
+              <CalendarDays size={14} style={{ color: '#0284c7' }} />
+              <p className="text-[10px] font-black tracking-widest uppercase flex-1" style={{ color: '#0284c7' }}>
+                Data do registro
+              </p>
+              <input
+                type="date"
+                value={selectedDate}
+                max={todayValue()}
+                onChange={e => setSelectedDate(e.target.value)}
+                className="text-xs font-bold outline-none bg-transparent"
+                style={{ color: '#0f172a', fontFamily: 'inherit' }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* ── STEP 1 — Escolher categoria ── */}
         {step === 'category' && (
@@ -315,22 +338,6 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, areaFilt
               <p className="text-base font-black tabular-nums" style={{ color: '#059669' }}>
                 = {formatBRL(finalAmount)}
               </p>
-            </div>
-
-            <div className="px-5 grid grid-cols-4 gap-2 mb-3">
-              {[1, 2, 3, 5].map(n => (
-                <button
-                  key={n}
-                  onClick={() => setQuickQty(String(n))}
-                  className="h-11 rounded-2xl text-base font-black active:scale-95 transition-all duration-75"
-                  style={{
-                    background: quickQtyInt === n ? '#059669' : '#f0fdf4',
-                    color:      quickQtyInt === n ? '#fff'    : '#059669',
-                    border:     `2px solid ${quickQtyInt === n ? '#059669' : '#6ee7b7'}`,
-                    fontFamily: 'inherit',
-                  }}
-                >{n}</button>
-              ))}
             </div>
 
             <div className="px-5 grid grid-cols-3 gap-2 mb-4">

@@ -5,15 +5,16 @@ import { PageTransition } from './PageTransition';
 import { MenuDrawer } from './MenuDrawer';
 
 interface AppLayoutProps {
-  activeTab:    string;
-  setActiveTab: (tab: string) => void;
-  onOpenModal:  () => void;
-  children:     ReactNode;
+  activeTab:      string;
+  setActiveTab:   (tab: string) => void;
+  onOpenModal:    () => void;
+  subModalOpen?:  boolean;
+  children:       ReactNode;
 }
 
-export function AppLayout({ activeTab, setActiveTab, onOpenModal, children }: AppLayoutProps) {
+export function AppLayout({ activeTab, setActiveTab, onOpenModal, subModalOpen = false, children }: AppLayoutProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const showFab = !['config', 'accounts', 'notes'].includes(activeTab) && !isDrawerOpen;
+  const showFab = !['config', 'accounts', 'notes'].includes(activeTab) && !isDrawerOpen && !subModalOpen;
 
   return (
     <div className="min-h-screen flex justify-center" style={{ background: '#f0f7f4' }}>
@@ -31,9 +32,8 @@ export function AppLayout({ activeTab, setActiveTab, onOpenModal, children }: Ap
             aria-label="Nova transação"
             className="fixed z-50 flex items-center justify-center rounded-full transition-all duration-150 active:scale-90"
             style={{
-              bottom: '58px',
-              left: '50%',
-              transform: 'translateX(-50%)',
+              bottom: '76px',
+              right: '20px',
               width: '56px',
               height: '56px',
               background: 'linear-gradient(135deg, #10b981, #059669)',

@@ -1,22 +1,81 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useRef, useLayoutEffect } from 'react';
+import { gsap } from 'gsap';
 import { TrendingUp, TrendingDown, AlertCircle, Wallet } from 'lucide-react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { type Transaction, CATEGORY_META } from '@/shared/types/transaction';
 import { type WorkDay } from '@/shared/types/workDay';
 import { formatBRL, greeting, toLocalDate, todayDate } from '@/shared/lib/format';
 import { TransactionItem } from '@/shared/components/TransactionItem';
+import { Pagination } from '@/shared/components/Pagination';
 import { AnimatedTitle } from './components/AnimatedTitle';
 import { StatCard } from './components/StatCard';
-import { SpendingTooltip } from './components/SpendingTooltip';
 import { AREA_COLORS } from './constants/areaColors';
+
+function AnimatedList({ page, children }: { page: number; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    gsap.fromTo(ref.current,
+      { opacity: 0, y: 10 },
+      { opacity: 1, y: 0, duration: 0.22, ease: 'power2.out' }
+    );
+  }, [page]);
+  return <div ref={ref}>{children}</div>;
+}
+
+interface DonutSlice { name: string; value: number; color: string; }
+
+function DonutChart({ data }: { data: DonutSlice[] }) {
+  const size = 144;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = 46;
+  const gap = 0.04; // radians between slices
+
+  const total = data.reduce((s, d) => s + d.value, 0);
+  if (total === 0) return null;
+
+  let cursor = -Math.PI / 2;
+  const slices = data.map(d => {
+    const angle = (d.value / total) * (2 * Math.PI) - gap;
+    const start = cursor + gap / 2;
+    const end = start + angle;
+    cursor += (d.value / total) * (2 * Math.PI);
+
+    const x1 = cx + r * Math.cos(start);
+    const y1 = cy + r * Math.sin(start);
+    const x2 = cx + r * Math.cos(end);
+    const y2 = cy + r * Math.sin(end);
+    const large = angle > Math.PI ? 1 : 0;
+
+    return { ...d, path: `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`, pct: Math.round((d.value / total) * 100) };
+  });
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {slices.map(s => (
+        <path
+          key={s.name}
+          d={s.path}
+          fill="none"
+          stroke={s.color}
+          strokeWidth={20}
+          strokeLinecap="round"
+        />
+      ))}
+    </svg>
+  );
+}
 
 interface Props {
   transactions: Transaction[];
   workDay:      WorkDay | null;
 }
 
+const PAGE_SIZE = 4;
+
 export function DashboardView({ transactions, workDay }: Props) {
   const today = todayDate();
+  const [txPage, setTxPage] = useState(0);
 
   const todayTxs = useMemo(
     () => transactions.filter(t => toLocalDate(t.when) === today),
@@ -53,8 +112,7 @@ export function DashboardView({ transactions, workDay }: Props) {
     ].filter(d => d.value > 0);
 
     const recentTx = [...todayTxs]
-      .sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime())
-      .slice(0, 8);
+      .sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime());
 
     return { totalIncome, totalExpenses, profit, trabalhoExp, casaExp, aleatorioExp, recentTx, pieData };
   }, [todayTxs]);
@@ -94,9 +152,8 @@ export function DashboardView({ transactions, workDay }: Props) {
           <div
             className="mt-6 rounded-2xl p-5"
             style={{
-              background: 'rgba(255,255,255,0.12)',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255,255,255,0.18)',
+              background: 'rgba(0,0,0,0.18)',
+              border: '1px solid rgba(255,255,255,0.15)',
             }}
           >
             <p className="text-emerald-300 text-xs font-bold tracking-widest uppercase mb-2">
@@ -175,23 +232,7 @@ export function DashboardView({ transactions, workDay }: Props) {
             </p>
             <div className="flex items-center gap-4">
               <div className="w-36 h-36 flex-shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%" cy="50%"
-                      innerRadius={38} outerRadius={58}
-                      paddingAngle={3}
-                      dataKey="value"
-                      strokeWidth={0}
-                    >
-                      {pieData.map((entry, i) => (
-                        <Cell key={i} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<SpendingTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
+                <DonutChart data={pieData} />
               </div>
               <div className="flex-1 space-y-3">
                 {[
@@ -245,11 +286,16 @@ export function DashboardView({ transactions, workDay }: Props) {
               Nada registrado ainda hoje. Que tal adicionar a primeira venda? 🥥
             </p>
           ) : (
-            <div className="divide-y" style={{ borderColor: '#f1f5f9' }}>
-              {recentTx.map(tx => (
-                <TransactionItem key={tx.id} tx={tx} />
-              ))}
-            </div>
+            <>
+              <AnimatedList page={txPage}>
+                <div className="divide-y" style={{ borderColor: '#f1f5f9' }}>
+                  {recentTx.slice(txPage * PAGE_SIZE, txPage * PAGE_SIZE + PAGE_SIZE).map(tx => (
+                    <TransactionItem key={tx.id} tx={tx} />
+                  ))}
+                </div>
+              </AnimatedList>
+              <Pagination page={txPage} total={recentTx.length} pageSize={PAGE_SIZE} onChange={setTxPage} />
+            </>
           )}
         </div>
 

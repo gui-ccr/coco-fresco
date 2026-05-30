@@ -1,9 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { gsap } from 'gsap';
 import { TrendingUp, TrendingDown, PackageOpen, Plus } from 'lucide-react';
 import { type Transaction, CATEGORY_META } from '@/shared/types/transaction';
 import { type AreaId, AREA_META } from '@/shared/types/area';
 import { formatBRL } from '@/shared/lib/format';
 import { TransactionItem } from '@/shared/components/TransactionItem';
+import { Pagination } from '@/shared/components/Pagination';
 
 interface Props {
   areaId: AreaId;
@@ -11,8 +13,25 @@ interface Props {
   onAdd?: () => void;
 }
 
+const PAGE_SIZE = 4;
+
+function AnimatedList({ page, children }: { page: number; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    gsap.fromTo(ref.current,
+      { opacity: 0, y: 10 },
+      { opacity: 1, y: 0, duration: 0.22, ease: 'power2.out' }
+    );
+  }, [page]);
+  return <div ref={ref}>{children}</div>;
+}
+
 export function AreaView({ areaId, transactions, onAdd }: Props) {
   const areaMeta = AREA_META[areaId];
+  const [page, setPage] = useState(0);
+
+  useEffect(() => { setPage(0); }, [areaId]);
 
   const areaTransactions = useMemo(
     () => transactions.filter(t => CATEGORY_META[t.cat].area === areaId),
@@ -74,10 +93,10 @@ export function AreaView({ areaId, transactions, onAdd }: Props) {
               <button
                 onClick={onAdd}
                 className="flex items-center gap-1.5 rounded-2xl px-4 py-2.5 active:scale-95 transition-all duration-100"
-                style={{ background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)', backdropFilter: 'blur(6px)' }}
+                style={{ background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.35)' }}
               >
                 <Plus size={15} className="text-white" strokeWidth={2.8} />
-                <span className="text-xs font-black text-white">Adicionar</span>
+                <span className="text-xs font-black text-white">Novo registro</span>
               </button>
             )}
           </div>
@@ -87,7 +106,7 @@ export function AreaView({ areaId, transactions, onAdd }: Props) {
             {income > 0 && (
               <div
                 className="rounded-2xl p-4"
-                style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.2)' }}
+                style={{ background: 'rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.15)' }}
               >
                 <div className="flex items-center gap-1.5 mb-1">
                   <TrendingUp size={14} className="text-white/70" />
@@ -98,7 +117,7 @@ export function AreaView({ areaId, transactions, onAdd }: Props) {
             )}
             <div
               className="rounded-2xl p-4"
-              style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.2)' }}
+              style={{ background: 'rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.15)' }}
             >
               <div className="flex items-center gap-1.5 mb-1">
                 <TrendingDown size={14} className="text-white/70" />
@@ -109,7 +128,7 @@ export function AreaView({ areaId, transactions, onAdd }: Props) {
             {income > 0 && (
               <div
                 className="rounded-2xl p-4 col-span-2"
-                style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.15)' }}
+                style={{ background: 'rgba(0,0,0,0.12)', border: '1px solid rgba(255,255,255,0.12)' }}
               >
                 <p className="text-white/70 text-[10px] font-bold tracking-wider uppercase mb-1">Resultado</p>
                 <p
@@ -173,11 +192,16 @@ export function AreaView({ areaId, transactions, onAdd }: Props) {
               </p>
             </div>
           ) : (
-            <div className="divide-y" style={{ borderColor: '#f1f5f9' }}>
-              {sortedTx.map(tx => (
-                <TransactionItem key={tx.id} tx={tx} variant="detailed" />
-              ))}
-            </div>
+            <>
+              <AnimatedList page={page}>
+                <div className="divide-y" style={{ borderColor: '#f1f5f9' }}>
+                  {sortedTx.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE).map(tx => (
+                    <TransactionItem key={tx.id} tx={tx} variant="detailed" />
+                  ))}
+                </div>
+              </AnimatedList>
+              <Pagination page={page} total={sortedTx.length} pageSize={PAGE_SIZE} onChange={setPage} />
+            </>
           )}
         </div>
 

@@ -1,13 +1,13 @@
+import { memo } from 'react';
 import { type Transaction, CATEGORY_META } from '@/shared/types/transaction';
 import { formatBRL, formatDateShort, formatDayMonth } from '@/shared/lib/format';
 
 interface TransactionItemProps {
   tx: Transaction;
-  /** compact: icon menor, subtitle única. detailed: icon maior, data abaixo do valor */
   variant?: 'compact' | 'detailed';
 }
 
-export function TransactionItem({ tx, variant = 'compact' }: TransactionItemProps) {
+export const TransactionItem = memo(function TransactionItem({ tx, variant = 'compact' }: TransactionItemProps) {
   const meta      = CATEGORY_META[tx.cat];
   const isDetailed = variant === 'detailed';
 
@@ -45,4 +45,4 @@ export function TransactionItem({ tx, variant = 'compact' }: TransactionItemProp
       </div>
     </div>
   );
-}
+});
