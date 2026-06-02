@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Plus, StickyNote } from 'lucide-react';
 import { type Note } from '@/shared/types/note';
 import { useNotes } from './hooks/useNotes';
@@ -13,8 +13,8 @@ export function NotesView() {
   const pinned   = notes.filter(n =>  n.pinned);
   const unpinned = notes.filter(n => !n.pinned);
 
-  function openCreate() { setEditNote(null); setIsModalOpen(true); }
-  function openEdit(note: Note) { setEditNote(note); setIsModalOpen(true); }
+  const openCreate = useCallback(() => { setEditNote(null); setIsModalOpen(true); }, []);
+  const openEdit   = useCallback((note: Note) => { setEditNote(note); setIsModalOpen(true); }, []);
 
   return (
     <div>

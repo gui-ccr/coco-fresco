@@ -1,14 +1,15 @@
 import { useMemo, useState, useRef, useLayoutEffect } from 'react';
 import { gsap } from 'gsap';
 import { TrendingUp, TrendingDown, AlertCircle, Wallet } from 'lucide-react';
-import { type Transaction, CATEGORY_META } from '@/shared/types/transaction';
-import { type WorkDay } from '@/shared/types/workDay';
+import { CATEGORY_META } from '@/shared/types/transaction';
 import { formatBRL, greeting, toLocalDate, todayDate } from '@/shared/lib/format';
 import { TransactionItem } from '@/shared/components/TransactionItem';
 import { Pagination } from '@/shared/components/Pagination';
 import { AnimatedTitle } from './components/AnimatedTitle';
 import { StatCard } from './components/StatCard';
 import { AREA_COLORS } from './constants/areaColors';
+import { useTransactionsQuery } from '@/shared/hooks/queries/useTransactionsQuery';
+import { useWorkDayQuery } from '@/shared/hooks/queries/useWorkDayQuery';
 
 function AnimatedList({ page, children }: { page: number; children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -29,7 +30,7 @@ function DonutChart({ data }: { data: DonutSlice[] }) {
   const cx = size / 2;
   const cy = size / 2;
   const r = 46;
-  const gap = 0.04; // radians between slices
+  const gap = 0.04;
 
   const total = data.reduce((s, d) => s + d.value, 0);
   if (total === 0) return null;
@@ -66,15 +67,13 @@ function DonutChart({ data }: { data: DonutSlice[] }) {
   );
 }
 
-interface Props {
-  transactions: Transaction[];
-  workDay:      WorkDay | null;
-}
-
 const PAGE_SIZE = 4;
 
-export function DashboardView({ transactions, workDay }: Props) {
-  const today = todayDate();
+export function DashboardView() {
+  const { data: transactions = [] } = useTransactionsQuery();
+  const { today: workDay }          = useWorkDayQuery();
+
+  const today  = todayDate();
   const [txPage, setTxPage] = useState(0);
 
   const todayTxs = useMemo(
@@ -148,7 +147,6 @@ export function DashboardView({ transactions, workDay }: Props) {
             {new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).format(new Date())}
           </p>
 
-          {/* Saldo final do dia */}
           <div
             className="mt-6 rounded-2xl p-5"
             style={{
@@ -190,13 +188,11 @@ export function DashboardView({ transactions, workDay }: Props) {
 
       {/* ─── Content ─── */}
       <div className="px-4 pt-5 space-y-5">
-        {/* Quick stats row */}
         <div className="flex gap-3">
           <StatCard label="Vendas hoje" value={totalIncome}   icon="💚" isPositive={true}  />
           <StatCard label="Gastos hoje" value={totalExpenses} icon="🔴" isPositive={false} />
         </div>
 
-        {/* Lucro do dia */}
         <div
           className="rounded-2xl px-5 py-4 flex items-center justify-between"
           style={{
@@ -209,7 +205,7 @@ export function DashboardView({ transactions, workDay }: Props) {
               className="text-[10px] font-black uppercase tracking-widest"
               style={{ color: profit >= 0 ? '#065f46' : '#991b1b' }}
             >
-              Lucro / Prejuízo hoje
+              Lucro / Detrimento hoje
             </p>
             <p
               className="text-2xl font-black tabular-nums mt-0.5"
@@ -221,7 +217,6 @@ export function DashboardView({ transactions, workDay }: Props) {
           <span className="text-4xl">{profit >= 0 ? '📈' : '📉'}</span>
         </div>
 
-        {/* Spending breakdown */}
         {totalExp > 0 ? (
           <div
             className="rounded-2xl p-5"
@@ -273,7 +268,6 @@ export function DashboardView({ transactions, workDay }: Props) {
           </div>
         )}
 
-        {/* Movimentações do dia */}
         <div
           className="rounded-2xl p-5"
           style={{ background: '#fff', boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}

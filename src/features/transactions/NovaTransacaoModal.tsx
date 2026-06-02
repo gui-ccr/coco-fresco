@@ -3,9 +3,10 @@ import { gsap } from 'gsap';
 import { X, ChevronRight, Zap, AlertTriangle, Check, Settings, CalendarDays } from 'lucide-react';
 import { type Category, type Transaction, CATEGORY_META, QUICK_SALE_CATS, REPO_CATS } from '@/shared/types/transaction';
 import { type AreaId } from '@/shared/types/area';
-import { type AppSettings } from '@/shared/types/settings';
+import { type AppSettings, DEFAULT_SETTINGS } from '@/shared/types/settings';
 import { formatBRL } from '@/shared/lib/format';
 import { EXPENSE_GROUPS } from './constants/expenseGroups';
+import { useSettingsQuery } from '@/shared/hooks/queries/useSettingsQuery';
 
 type Step = 'category' | 'quick_qty' | 'quantity' | 'amount' | 'confirm';
 
@@ -17,12 +18,12 @@ interface Props {
   isOpen:          boolean;
   onClose:         () => void;
   onSave:          (tx: Omit<Transaction, 'id' | 'when'>, when: string) => void;
-  settings:        AppSettings;
   areaFilter?:     AreaId;
   onGoToSettings?: () => void;
 }
 
-export function NovaTransacaoModal({ isOpen, onClose, onSave, settings, areaFilter, onGoToSettings }: Props) {
+export function NovaTransacaoModal({ isOpen, onClose, onSave, areaFilter, onGoToSettings }: Props) {
+  const { data: settings = DEFAULT_SETTINGS } = useSettingsQuery();
   const showDatePicker   = !!areaFilter;
   const showQuickSales   = !areaFilter || areaFilter === 'trabalho';
   const visibleGroups    = areaFilter

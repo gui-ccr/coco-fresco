@@ -1,15 +1,15 @@
 import { useMemo, useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { gsap } from 'gsap';
 import { TrendingUp, TrendingDown, PackageOpen, Plus } from 'lucide-react';
-import { type Transaction, CATEGORY_META } from '@/shared/types/transaction';
+import { CATEGORY_META } from '@/shared/types/transaction';
 import { type AreaId, AREA_META } from '@/shared/types/area';
 import { formatBRL } from '@/shared/lib/format';
 import { TransactionItem } from '@/shared/components/TransactionItem';
 import { Pagination } from '@/shared/components/Pagination';
+import { useTransactionsQuery } from '@/shared/hooks/queries/useTransactionsQuery';
 
 interface Props {
   areaId: AreaId;
-  transactions: Transaction[];
   onAdd?: () => void;
 }
 
@@ -27,7 +27,8 @@ function AnimatedList({ page, children }: { page: number; children: React.ReactN
   return <div ref={ref}>{children}</div>;
 }
 
-export function AreaView({ areaId, transactions, onAdd }: Props) {
+export function AreaView({ areaId, onAdd }: Props) {
+  const { data: transactions = [] } = useTransactionsQuery();
   const areaMeta = AREA_META[areaId];
   const [page, setPage] = useState(0);
 
@@ -42,7 +43,7 @@ export function AreaView({ areaId, transactions, onAdd }: Props) {
     const income   = areaTransactions.filter(t =>  CATEGORY_META[t.cat].isIncome).reduce((s, t) => s + t.value, 0);
     const expenses = areaTransactions.filter(t => !CATEGORY_META[t.cat].isIncome).reduce((s, t) => s + t.value, 0);
 
-    const byCategory = areaTransactions.reduce<Record<string, { meta: typeof CATEGORY_META[keyof typeof CATEGORY_META]; total: number; items: Transaction[] }>>(
+    const byCategory = areaTransactions.reduce<Record<string, { meta: typeof CATEGORY_META[keyof typeof CATEGORY_META]; total: number; items: typeof areaTransactions }>>(
       (acc, tx) => {
         if (!acc[tx.cat]) acc[tx.cat] = { meta: CATEGORY_META[tx.cat], total: 0, items: [] };
         acc[tx.cat].total += tx.value;
@@ -56,6 +57,7 @@ export function AreaView({ areaId, transactions, onAdd }: Props) {
   }, [areaTransactions]);
 
   const net = income - expenses;
+
   const sortedTx = useMemo(
     () => [...areaTransactions].sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime()),
     [areaTransactions]
@@ -101,7 +103,6 @@ export function AreaView({ areaId, transactions, onAdd }: Props) {
             )}
           </div>
 
-          {/* Summary row */}
           <div className="mt-5 grid grid-cols-2 gap-3">
             {income > 0 && (
               <div
@@ -146,7 +147,6 @@ export function AreaView({ areaId, transactions, onAdd }: Props) {
       {/* ─── Content ─── */}
       <div className="px-4 pt-5 space-y-4">
 
-        {/* Category summary cards */}
         {Object.keys(byCategory).length > 0 && (
           <div>
             <p className="text-[10px] font-bold tracking-widest uppercase mb-3 px-1" style={{ color: '#94a3b8' }}>
@@ -178,7 +178,6 @@ export function AreaView({ areaId, transactions, onAdd }: Props) {
           </div>
         )}
 
-        {/* All transactions */}
         <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
           <p className="text-[10px] font-bold tracking-widest uppercase mb-1" style={{ color: '#94a3b8' }}>
             Todas as movimentações

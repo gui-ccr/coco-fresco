@@ -1,10 +1,16 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Wallet, TrendingDown, CheckCircle2, Calendar, CalendarDays, Layers } from 'lucide-react';
 import { type Account } from '@/shared/types/account';
 import { formatBRL } from '@/shared/lib/format';
-import { useAccounts } from './hooks/useAccounts';
-import { type NewAccountData } from './hooks/useAccounts';
+import {
+  useAccountsQuery,
+  useAddAccountMutation,
+  useUpdateAccountMutation,
+  useDeleteAccountMutation,
+  useTogglePaidMutation,
+  type NewAccountData,
+} from '@/shared/hooks/queries/useAccountsQuery';
 import { AccountCard } from './components/AccountCard';
 import { AccountModal } from './components/AccountModal';
 
@@ -78,7 +84,11 @@ function sortAccounts(accounts: Account[]): Account[] {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function AccountsView() {
-  const { accounts, addAccount, updateAccount, deleteAccount, togglePaid } = useAccounts();
+  const { data: accounts = [] }  = useAccountsQuery();
+  const addMutation              = useAddAccountMutation();
+  const updateMutation           = useUpdateAccountMutation();
+  const deleteMutation           = useDeleteAccountMutation();
+  const togglePaidMutation       = useTogglePaidMutation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [period, setPeriod]           = useState<PeriodFilter>('month');
@@ -109,13 +119,13 @@ export function AccountsView() {
     };
   }, [accounts, period]);
 
-  function openCreate() { setEditAccount(null); setIsModalOpen(true); }
-  function openEdit(account: Account) { setEditAccount(account); setIsModalOpen(true); }
+  const openCreate = useCallback(() => { setEditAccount(null); setIsModalOpen(true); }, []);
+  const openEdit   = useCallback((account: Account) => { setEditAccount(account); setIsModalOpen(true); }, []);
 
-  function handleSave(data: NewAccountData) {
-    if (editAccount) updateAccount(editAccount.id, data);
-    else             addAccount(data);
-  }
+  const handleSave = useCallback((data: NewAccountData) => {
+    if (editAccount) updateMutation.mutate({ id: editAccount.id, patch: data });
+    else             addMutation.mutate(data);
+  }, [editAccount, updateMutation, addMutation]);
 
   const PERIOD_TABS: { id: PeriodFilter; label: string; Icon: typeof Calendar }[] = [
     { id: 'week',  label: 'Semana', Icon: Calendar     },
@@ -281,9 +291,9 @@ export function AccountsView() {
             <AccountCard
               key={account.id}
               account={account}
-              onTogglePaid={togglePaid}
+              onTogglePaid={(id) => togglePaidMutation.mutate({ id, isPaid: !account.isPaid })}
               onEdit={openEdit}
-              onDelete={deleteAccount}
+              onDelete={(id) => deleteMutation.mutate(id)}
             />
           ))
         )}

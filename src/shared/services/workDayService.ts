@@ -1,7 +1,9 @@
-import { supabase } from '@/config/supabase';
+import { api } from '@/config/axios';
 import type { WorkDay } from '@/shared/types/workDay';
 
-function rowToWorkDay(row: { id: string; date: string; capital_init: number; created_at: string }): WorkDay {
+type WorkDayRow = { id: string; date: string; capital_init: number; created_at: string };
+
+function rowToWorkDay(row: WorkDayRow): WorkDay {
   return {
     id:          row.id,
     date:        row.date,
@@ -11,22 +13,16 @@ function rowToWorkDay(row: { id: string; date: string; capital_init: number; cre
 }
 
 export async function fetchWorkDays(): Promise<WorkDay[]> {
-  const { data, error } = await supabase
-    .from('work_days')
-    .select('id, date, capital_init, created_at')
-    .order('date', { ascending: false });
-
-  if (error) throw error;
-  return (data ?? []).map(rowToWorkDay);
+  const { data } = await api.get<WorkDayRow[]>('/work_days', {
+    params: { select: 'id,date,capital_init,created_at', order: 'date.desc' },
+  });
+  return data.map(rowToWorkDay);
 }
 
 export async function insertWorkDay(date: string, capitalInit: number): Promise<WorkDay> {
-  const { data, error } = await supabase
-    .from('work_days')
-    .insert({ date, capital_init: capitalInit })
-    .select('id, date, capital_init, created_at')
-    .single();
-
-  if (error) throw error;
-  return rowToWorkDay(data);
+  const { data } = await api.post<WorkDayRow[]>('/work_days', {
+    date,
+    capital_init: capitalInit,
+  });
+  return rowToWorkDay(data[0]);
 }

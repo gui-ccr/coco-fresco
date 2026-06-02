@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Pin } from 'lucide-react';
 import { type Note, NOTE_COLOR_META } from '@/shared/types/note';
 
@@ -11,7 +12,7 @@ function formatDate(iso: string): string {
     .format(new Date(iso));
 }
 
-export function NoteCard({ note, onOpen }: NoteCardProps) {
+export const NoteCard = memo(function NoteCard({ note, onOpen }: NoteCardProps) {
   const colors = NOTE_COLOR_META[note.color];
 
   return (
@@ -62,4 +63,4 @@ export function NoteCard({ note, onOpen }: NoteCardProps) {
       </div>
     </button>
   );
-}
+});

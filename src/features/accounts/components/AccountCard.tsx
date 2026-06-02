@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Check, Pencil, Trash2, CalendarDays, AlertCircle } from 'lucide-react';
 import { type Account, ACCOUNT_TYPE_META } from '@/shared/types/account';
 import { formatBRL } from '@/shared/lib/format';
@@ -19,7 +20,7 @@ function formatDue(dateStr: string): string {
     .format(new Date(dateStr + 'T12:00:00'));
 }
 
-export function AccountCard({ account, onTogglePaid, onEdit, onDelete }: AccountCardProps) {
+export const AccountCard = memo(function AccountCard({ account, onTogglePaid, onEdit, onDelete }: AccountCardProps) {
   const meta    = ACCOUNT_TYPE_META[account.type];
   const overdue = !account.isPaid && account.dueDate ? isOverdue(account.dueDate) : false;
 
@@ -132,4 +133,4 @@ export function AccountCard({ account, onTogglePaid, onEdit, onDelete }: Account
       </div>
     </div>
   );
-}
+});

@@ -1,15 +1,13 @@
 import { useMemo, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { gsap } from 'gsap';
 import { TrendingUp, TrendingDown, Wallet, CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { type Transaction } from '@/shared/types/transaction';
-import { type WorkDay } from '@/shared/types/workDay';
 import { formatBRL } from '@/shared/lib/format';
 import { DayCard, buildSummaries } from './components/DayCard';
 import { Pagination } from '@/shared/components/Pagination';
+import { useTransactionsQuery } from '@/shared/hooks/queries/useTransactionsQuery';
+import { useWorkDayQuery } from '@/shared/hooks/queries/useWorkDayQuery';
 
 interface Props {
-  transactions:      Transaction[];
-  workDays:          WorkDay[];
   onSubModalChange?: (open: boolean) => void;
 }
 
@@ -229,7 +227,9 @@ function Calendar({ isOpen, recordDates, selected, onSelect, onClose }: Calendar
 
 // ── Main view ──────────────────────────────────────────────────────────────
 
-export function RelatorioView({ transactions, workDays, onSubModalChange }: Props) {
+export function RelatorioView({ onSubModalChange }: Props) {
+  const { data: transactions = [] } = useTransactionsQuery();
+  const { data: workDays = [] }     = useWorkDayQuery();
   const [period, setPeriod]             = useState<Period>('all');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);

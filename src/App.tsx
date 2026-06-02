@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useApp } from '@/context/AppContext';
 import { AppLayout } from '@/layout/AppLayout';
 import { NovaTransacaoModal } from '@/features/transactions/NovaTransacaoModal';
 import { IniciarDiaModal } from '@/features/work-day/IniciarDiaModal';
@@ -8,49 +8,34 @@ import { SettingsView } from '@/features/settings/SettingsView';
 import { RelatorioView } from '@/features/reports/RelatorioView';
 import { AccountsView } from '@/features/accounts/AccountsView';
 import { NotesView } from '@/features/notes/NotesView';
-import { useTransactions } from '@/shared/hooks/useTransactions';
-import { useSettings } from '@/shared/hooks/useSettings';
-import { useWorkDay } from '@/shared/hooks/useWorkDay';
-import { type AreaId } from '@/shared/types/area';
+import { useAddTransactionMutation } from '@/shared/hooks/queries/useTransactionsQuery';
+import { useWorkDayQuery, useInitDayMutation } from '@/shared/hooks/queries/useWorkDayQuery';
+import { todayDate } from '@/shared/lib/format';
+import type { AreaId } from '@/shared/types/area';
 
 function App() {
-  const [activeTab, setActiveTab]             = useState('dashboard');
-  const [isModalOpen, setIsModalOpen]         = useState(false);
-  const [modalAreaFilter, setModalAreaFilter] = useState<AreaId | undefined>();
-  const [subModalOpen, setSubModalOpen]       = useState(false);
+  const {
+    activeTab, setActiveTab,
+    isModalOpen, modalAreaFilter,
+    subModalOpen, setSubModalOpen,
+    openAreaModal, openFabModal, closeModal,
+  } = useApp();
 
-  const { transactions, addTransaction } = useTransactions();
-  const { settings, updateSettings }     = useSettings();
-  const { today, allDays, needsInit, loading: dayLoading, initDay } = useWorkDay();
-
-  function openAreaModal(area: AreaId) {
-    setModalAreaFilter(area);
-    setIsModalOpen(true);
-  }
-
-  function openFabModal() {
-    setModalAreaFilter(undefined);
-    setIsModalOpen(true);
-  }
-
-  function closeModal() {
-    setIsModalOpen(false);
-    // não limpa modalAreaFilter aqui — o modal ainda anima o fechamento
-    // e leria areaFilter=undefined durante a animação, mostrando tudo
-    // é limpo em openFabModal / openAreaModal antes de cada abertura
-  }
+  const { needsInit }      = useWorkDayQuery();
+  const addTxMutation      = useAddTransactionMutation();
+  const initDayMutation    = useInitDayMutation();
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard': return <DashboardView transactions={transactions} workDay={today} />;
-      case 'trabalho':  return <AreaView areaId="trabalho"  transactions={transactions} onAdd={() => openAreaModal('trabalho')} />;
-      case 'casa':      return <AreaView areaId="casa"      transactions={transactions} onAdd={() => openAreaModal('casa')} />;
-      case 'aleatorio': return <AreaView areaId="aleatorio" transactions={transactions} onAdd={() => openAreaModal('aleatorio')} />;
-      case 'relatorio': return <RelatorioView transactions={transactions} workDays={allDays} onSubModalChange={setSubModalOpen} />;
+      case 'dashboard': return <DashboardView />;
+      case 'trabalho':  return <AreaView areaId="trabalho"  onAdd={() => openAreaModal('trabalho'  as AreaId)} />;
+      case 'casa':      return <AreaView areaId="casa"      onAdd={() => openAreaModal('casa'      as AreaId)} />;
+      case 'aleatorio': return <AreaView areaId="aleatorio" onAdd={() => openAreaModal('aleatorio' as AreaId)} />;
+      case 'relatorio': return <RelatorioView onSubModalChange={setSubModalOpen} />;
       case 'accounts':  return <AccountsView />;
       case 'notes':     return <NotesView />;
-      case 'config':    return <SettingsView settings={settings} updateSettings={updateSettings} />;
-      default:          return <DashboardView transactions={transactions} workDay={today} />;
+      case 'config':    return <SettingsView />;
+      default:          return <DashboardView />;
     }
   };
 
@@ -68,14 +53,17 @@ function App() {
       <NovaTransacaoModal
         isOpen={isModalOpen}
         onClose={closeModal}
-        onSave={(tx, when) => addTransaction(tx, when)}
-        settings={settings}
+        onSave={(tx, when) => addTxMutation.mutate({ tx, when })}
         areaFilter={modalAreaFilter}
         onGoToSettings={() => setActiveTab('config')}
       />
 
-      {!dayLoading && needsInit && (
-        <IniciarDiaModal onConfirm={initDay} />
+      {needsInit && (
+        <IniciarDiaModal
+          onConfirm={(capitalInit) =>
+            initDayMutation.mutate({ date: todayDate(), capitalInit })
+          }
+        />
       )}
     </>
   );

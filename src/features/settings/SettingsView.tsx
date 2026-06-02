@@ -1,31 +1,29 @@
 import { useState } from 'react';
 import { Check, Settings } from 'lucide-react';
-import { type AppSettings } from '@/shared/types/settings';
 import { formatBRL } from '@/shared/lib/format';
 import { PriceField } from './components/PriceField';
 import { VENDA_FIELDS, REPO_FIELDS } from './constants/priceFields';
+import { useSettingsQuery, useUpdateSettingsMutation } from '@/shared/hooks/queries/useSettingsQuery';
+import { DEFAULT_SETTINGS } from '@/shared/types/settings';
 
-interface Props {
-  settings:       AppSettings;
-  updateSettings: (next: AppSettings) => void;
-}
-
-export function SettingsView({ settings, updateSettings }: Props) {
+export function SettingsView() {
+  const { data: settings = DEFAULT_SETTINGS } = useSettingsQuery();
+  const updateMutation = useUpdateSettingsMutation();
   const [saved, setSaved] = useState(false);
-
-  function handleVendaChange(key: string, value: number) {
-    updateSettings({ ...settings, precoVenda: { ...settings.precoVenda, [key]: value } });
-    flashSaved();
-  }
-
-  function handleCustoChange(key: string, value: number) {
-    updateSettings({ ...settings, custoUnit: { ...settings.custoUnit, [key]: value } });
-    flashSaved();
-  }
 
   function flashSaved() {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  }
+
+  function handleVendaChange(key: string, value: number) {
+    updateMutation.mutate({ ...settings, precoVenda: { ...settings.precoVenda, [key]: value } });
+    flashSaved();
+  }
+
+  function handleCustoChange(key: string, value: number) {
+    updateMutation.mutate({ ...settings, custoUnit: { ...settings.custoUnit, [key]: value } });
+    flashSaved();
   }
 
   return (
@@ -68,7 +66,6 @@ export function SettingsView({ settings, updateSettings }: Props) {
       {/* ─── Conteúdo ─── */}
       <div className="px-4 pt-5 space-y-4 pb-8">
 
-        {/* Preços de Venda */}
         <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-base">💚</span>
@@ -83,13 +80,12 @@ export function SettingsView({ settings, updateSettings }: Props) {
             <PriceField
               key={field.key}
               field={field}
-              value={settings.precoVenda[field.key as keyof AppSettings['precoVenda']]}
+              value={settings.precoVenda[field.key as keyof typeof settings.precoVenda]}
               onChange={v => handleVendaChange(field.key, v)}
             />
           ))}
         </div>
 
-        {/* Custo de Reposição */}
         <div className="rounded-2xl p-5" style={{ background: '#fff', boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-base">🔶</span>
@@ -101,7 +97,7 @@ export function SettingsView({ settings, updateSettings }: Props) {
             Quanto custa cada unidade que você compra. Você informa a quantidade e o sistema calcula o total.
           </p>
           {REPO_FIELDS.map(field => {
-            const cost = settings.custoUnit[field.key as keyof AppSettings['custoUnit']];
+            const cost = settings.custoUnit[field.key as keyof typeof settings.custoUnit];
             return (
               <PriceField
                 key={field.key}
@@ -113,7 +109,6 @@ export function SettingsView({ settings, updateSettings }: Props) {
           })}
         </div>
 
-        {/* Info card */}
         <div
           className="rounded-2xl p-4 flex items-start gap-3"
           style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}

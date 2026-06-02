@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { type Transaction, CATEGORY_META } from '@/shared/types/transaction';
 import { type WorkDay } from '@/shared/types/workDay';
@@ -32,7 +32,7 @@ interface DayCardProps {
   summary: DaySummary;
 }
 
-export function DayCard({ summary }: DayCardProps) {
+export const DayCard = memo(function DayCard({ summary }: DayCardProps) {
   const [expanded, setExpanded] = useState(false);
   const { workDay, entradas, saidas, saldoFinal } = summary;
   const isToday    = workDay.date === new Date().toLocaleDateString('en-CA');
@@ -118,4 +118,4 @@ export function DayCard({ summary }: DayCardProps) {
       )}
     </div>
   );
-}
+});

@@ -1,51 +1,37 @@
-import { supabase } from '@/config/supabase';
+import { api } from '@/config/axios';
 import type { Transaction } from '@/shared/types/transaction';
 
-type NewTransaction = Omit<Transaction, 'id' | 'when'> & { when?: string };
+type TxRow = { id: string; cat: string; value: number; when: string; note: string | null };
 
-export async function fetchTransactions(): Promise<Transaction[]> {
-  const { data, error } = await supabase
-    .from('transactions')
-    .select('id, cat, value, when, note')
-    .order('when', { ascending: false });
+type NewTx = Omit<Transaction, 'id' | 'when'> & { when?: string };
 
-  if (error) throw error;
-  return (data ?? []).map(row => ({
+function rowToTx(row: TxRow): Transaction {
+  return {
     id:    row.id,
-    cat:   row.cat,
+    cat:   row.cat   as Transaction['cat'],
     value: Number(row.value),
     when:  row.when,
-    note:  row.note ?? undefined,
-  }));
-}
-
-export async function insertTransaction(tx: NewTransaction): Promise<Transaction> {
-  const { data, error } = await supabase
-    .from('transactions')
-    .insert({
-      cat:   tx.cat,
-      value: tx.value,
-      when:  tx.when ?? new Date().toISOString(),
-      note:  tx.note ?? null,
-    })
-    .select('id, cat, value, when, note')
-    .single();
-
-  if (error) throw error;
-  return {
-    id:    data.id,
-    cat:   data.cat,
-    value: Number(data.value),
-    when:  data.when,
-    note:  data.note ?? undefined,
+    note:  row.note  ?? undefined,
   };
 }
 
-export async function deleteTransaction(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('transactions')
-    .delete()
-    .eq('id', id);
+export async function fetchTransactions(): Promise<Transaction[]> {
+  const { data } = await api.get<TxRow[]>('/transactions', {
+    params: { select: 'id,cat,value,when,note', order: 'when.desc' },
+  });
+  return data.map(rowToTx);
+}
 
-  if (error) throw error;
+export async function insertTransaction(tx: NewTx): Promise<Transaction> {
+  const { data } = await api.post<TxRow[]>('/transactions', {
+    cat:   tx.cat,
+    value: tx.value,
+    when:  tx.when ?? new Date().toISOString(),
+    note:  tx.note ?? null,
+  });
+  return rowToTx(data[0]);
+}
+
+export async function deleteTransaction(id: string): Promise<void> {
+  await api.delete('/transactions', { params: { id: `eq.${id}` } });
 }

@@ -1,5 +1,5 @@
-import { supabase } from '@/config/supabase';
-import { type Account, type AccountType, type Recurrence } from '@/shared/types/account';
+import { api } from '@/config/axios';
+import type { Account, AccountType, Recurrence } from '@/shared/types/account';
 
 type AccountRow = {
   id:         string;
@@ -14,7 +14,7 @@ type AccountRow = {
   created_at: string;
 };
 
-const SELECT_COLS = 'id, name, type, amount, due_date, notes, is_paid, recurrence, group_id, created_at';
+const SELECT_COLS = 'id,name,type,amount,due_date,notes,is_paid,recurrence,group_id,created_at';
 
 function rowToAccount(row: AccountRow): Account {
   return {
@@ -46,23 +46,15 @@ function accountToRow(a: Account) {
 }
 
 export async function fetchAccounts(): Promise<Account[]> {
-  const { data, error } = await supabase
-    .from('accounts')
-    .select(SELECT_COLS)
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return (data ?? []).map(rowToAccount);
+  const { data } = await api.get<AccountRow[]>('/accounts', {
+    params: { select: SELECT_COLS, order: 'created_at.desc' },
+  });
+  return data.map(rowToAccount);
 }
 
 export async function insertAccounts(accounts: Account[]): Promise<Account[]> {
-  const { data, error } = await supabase
-    .from('accounts')
-    .insert(accounts.map(accountToRow))
-    .select(SELECT_COLS);
-
-  if (error) throw error;
-  return (data ?? []).map(rowToAccount);
+  const { data } = await api.post<AccountRow[]>('/accounts', accounts.map(accountToRow));
+  return data.map(rowToAccount);
 }
 
 export async function patchAccount(
@@ -86,11 +78,9 @@ export async function patchAccount(
   if ('isPaid'     in patch) row.is_paid    = patch.isPaid;
   if ('recurrence' in patch) row.recurrence = patch.recurrence;
 
-  const { error } = await supabase.from('accounts').update(row).eq('id', id);
-  if (error) throw error;
+  await api.patch('/accounts', row, { params: { id: `eq.${id}` } });
 }
 
 export async function removeAccount(id: string): Promise<void> {
-  const { error } = await supabase.from('accounts').delete().eq('id', id);
-  if (error) throw error;
+  await api.delete('/accounts', { params: { id: `eq.${id}` } });
 }

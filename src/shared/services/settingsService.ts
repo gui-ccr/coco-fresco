@@ -1,30 +1,19 @@
-import { supabase } from '@/config/supabase';
+import { api } from '@/config/axios';
 import type { AppSettings } from '@/shared/types/settings';
 
+type SettingsRow = { preco_venda: AppSettings['precoVenda']; custo_unit: AppSettings['custoUnit'] };
+
 export async function fetchSettings(): Promise<AppSettings | null> {
-  const { data, error } = await supabase
-    .from('app_settings')
-    .select('preco_venda, custo_unit')
-    .eq('id', 1)
-    .single();
-
-  if (error) throw error;
-  if (!data) return null;
-
-  return {
-    precoVenda: data.preco_venda as AppSettings['precoVenda'],
-    custoUnit:  data.custo_unit  as AppSettings['custoUnit'],
-  };
+  const { data } = await api.get<SettingsRow[]>('/app_settings', {
+    params: { select: 'preco_venda,custo_unit', id: 'eq.1' },
+  });
+  if (!data[0]) return null;
+  return { precoVenda: data[0].preco_venda, custoUnit: data[0].custo_unit };
 }
 
 export async function upsertSettings(settings: AppSettings): Promise<void> {
-  const { error } = await supabase
-    .from('app_settings')
-    .update({
-      preco_venda: settings.precoVenda,
-      custo_unit:  settings.custoUnit,
-    })
-    .eq('id', 1);
-
-  if (error) throw error;
+  await api.patch('/app_settings', {
+    preco_venda: settings.precoVenda,
+    custo_unit:  settings.custoUnit,
+  }, { params: { id: 'eq.1' } });
 }

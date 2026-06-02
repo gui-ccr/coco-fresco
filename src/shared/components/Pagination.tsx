@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Props {
@@ -7,7 +8,7 @@ interface Props {
   onChange: (p: number) => void;
 }
 
-export function Pagination({ page, total, pageSize, onChange }: Props) {
+export const Pagination = memo(function Pagination({ page, total, pageSize, onChange }: Props) {
   const totalPages = Math.ceil(total / pageSize);
   if (totalPages <= 1) return null;
 
@@ -47,4 +48,4 @@ export function Pagination({ page, total, pageSize, onChange }: Props) {
       </button>
     </div>
   );
-}
+});
