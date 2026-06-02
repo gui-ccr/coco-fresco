@@ -3,11 +3,12 @@ import { type Transaction, CATEGORY_META } from '@/shared/types/transaction';
 import { formatBRL, formatDateShort, formatDayMonth } from '@/shared/lib/format';
 
 interface TransactionItemProps {
-  tx: Transaction;
+  tx:       Transaction;
   variant?: 'compact' | 'detailed';
+  hidden?:  boolean;
 }
 
-export const TransactionItem = memo(function TransactionItem({ tx, variant = 'compact' }: TransactionItemProps) {
+export const TransactionItem = memo(function TransactionItem({ tx, variant = 'compact', hidden }: TransactionItemProps) {
   const meta      = CATEGORY_META[tx.cat];
   const isDetailed = variant === 'detailed';
 
@@ -35,7 +36,7 @@ export const TransactionItem = memo(function TransactionItem({ tx, variant = 'co
 
       <div className={`flex-shrink-0 ${isDetailed ? 'flex flex-col items-end' : ''}`}>
         <p className="text-sm font-black tabular-nums" style={{ color: meta.isIncome ? '#059669' : meta.color }}>
-          {meta.isIncome ? '+' : '−'} {formatBRL(tx.value)}
+          {hidden ? 'R$ ••••' : `${meta.isIncome ? '+' : '−'} ${formatBRL(tx.value)}`}
         </p>
         {isDetailed && (
           <p className="text-[10px]" style={{ color: '#cbd5e1' }}>

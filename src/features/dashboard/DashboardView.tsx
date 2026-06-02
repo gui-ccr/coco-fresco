@@ -1,6 +1,6 @@
-import { useMemo, useState, useRef, useLayoutEffect } from 'react';
+import { useMemo, useState, useRef, useLayoutEffect, useCallback } from 'react';
 import { gsap } from 'gsap';
-import { TrendingUp, TrendingDown, AlertCircle, Wallet } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertCircle, Wallet, Eye, EyeOff } from 'lucide-react';
 import { CATEGORY_META } from '@/shared/types/transaction';
 import { formatBRL, greeting, toLocalDate, todayDate } from '@/shared/lib/format';
 import { TransactionItem } from '@/shared/components/TransactionItem';
@@ -67,14 +67,29 @@ function DonutChart({ data }: { data: DonutSlice[] }) {
   );
 }
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE    = 4;
+const PRIVACY_KEY  = 'coco_privacy_mode';
+const MASKED_VALUE = 'R$ ••••';
+
+function mask(formatted: string, hidden: boolean): string {
+  return hidden ? MASKED_VALUE : formatted;
+}
 
 export function DashboardView() {
   const { data: transactions = [] } = useTransactionsQuery();
   const { today: workDay }          = useWorkDayQuery();
 
   const today  = todayDate();
-  const [txPage, setTxPage] = useState(0);
+  const [txPage,  setTxPage]  = useState(0);
+  const [hidden,  setHidden]  = useState(() => localStorage.getItem(PRIVACY_KEY) === '1');
+
+  const toggleHidden = useCallback(() => {
+    setHidden(prev => {
+      const next = !prev;
+      localStorage.setItem(PRIVACY_KEY, next ? '1' : '0');
+      return next;
+    });
+  }, []);
 
   const todayTxs = useMemo(
     () => transactions.filter(t => toLocalDate(t.when) === today),
@@ -141,11 +156,30 @@ export function DashboardView() {
         />
 
         <div className="relative z-10">
-          <p className="text-emerald-300 text-sm font-semibold mb-1">{greeting()} 👋</p>
-          <AnimatedTitle />
-          <p className="text-emerald-300 text-xs font-medium">
-            {new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).format(new Date())}
-          </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-emerald-300 text-sm font-semibold mb-1">{greeting()} 👋</p>
+              <AnimatedTitle />
+              <p className="text-emerald-300 text-xs font-medium">
+                {new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).format(new Date())}
+              </p>
+            </div>
+            <button
+              onClick={toggleHidden}
+              className="flex items-center justify-center rounded-2xl active:scale-90 transition-all duration-100 mt-1"
+              style={{
+                width: 38, height: 38,
+                background: hidden ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.12)',
+                border: `1.5px solid ${hidden ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)'}`,
+              }}
+              aria-label={hidden ? 'Mostrar valores' : 'Esconder valores'}
+            >
+              {hidden
+                ? <EyeOff size={16} className="text-white" />
+                : <Eye    size={16} className="text-emerald-200" />
+              }
+            </button>
+          </div>
 
           <div
             className="mt-6 rounded-2xl p-5"
@@ -161,24 +195,24 @@ export function DashboardView() {
               className="text-4xl font-black tabular-nums leading-none mb-4"
               style={{ color: saldoFinal >= 0 ? '#6ee7b7' : '#fca5a5' }}
             >
-              {formatBRL(saldoFinal)}
+              {mask(formatBRL(saldoFinal), hidden)}
             </p>
             <div className="flex gap-3 flex-wrap">
               <div className="flex items-center gap-1.5">
                 <Wallet size={13} className="text-yellow-300" />
-                <span className="text-white text-xs font-bold">{formatBRL(capitalInit)}</span>
+                <span className="text-white text-xs font-bold">{mask(formatBRL(capitalInit), hidden)}</span>
                 <span className="text-yellow-300 text-[10px]">capital</span>
               </div>
               <div className="w-px bg-white opacity-20" />
               <div className="flex items-center gap-1.5">
                 <TrendingUp size={13} className="text-emerald-400" />
-                <span className="text-white text-xs font-bold">{formatBRL(totalIncome)}</span>
+                <span className="text-white text-xs font-bold">{mask(formatBRL(totalIncome), hidden)}</span>
                 <span className="text-emerald-400 text-[10px]">entrou</span>
               </div>
               <div className="w-px bg-white opacity-20" />
               <div className="flex items-center gap-1.5">
                 <TrendingDown size={13} className="text-red-300" />
-                <span className="text-white text-xs font-bold">{formatBRL(totalExpenses)}</span>
+                <span className="text-white text-xs font-bold">{mask(formatBRL(totalExpenses), hidden)}</span>
                 <span className="text-red-300 text-[10px]">saiu</span>
               </div>
             </div>
@@ -189,8 +223,8 @@ export function DashboardView() {
       {/* ─── Content ─── */}
       <div className="px-4 pt-5 space-y-5">
         <div className="flex gap-3">
-          <StatCard label="Vendas hoje" value={totalIncome}   icon="💚" isPositive={true}  />
-          <StatCard label="Gastos hoje" value={totalExpenses} icon="🔴" isPositive={false} />
+          <StatCard label="Vendas hoje" value={totalIncome}   icon="💚" isPositive={true}  hidden={hidden} />
+          <StatCard label="Gastos hoje" value={totalExpenses} icon="🔴" isPositive={false} hidden={hidden} />
         </div>
 
         <div
@@ -211,7 +245,7 @@ export function DashboardView() {
               className="text-2xl font-black tabular-nums mt-0.5"
               style={{ color: profit >= 0 ? '#059669' : '#dc2626' }}
             >
-              {profit >= 0 ? '+' : ''}{formatBRL(profit)}
+              {hidden ? MASKED_VALUE : `${profit >= 0 ? '+' : ''}${formatBRL(profit)}`}
             </p>
           </div>
           <span className="text-4xl">{profit >= 0 ? '📈' : '📉'}</span>
@@ -242,13 +276,13 @@ export function DashboardView() {
                         <span className="text-xs font-semibold" style={{ color: '#475569' }}>{item.label}</span>
                       </div>
                       <span className="text-xs font-black tabular-nums" style={{ color: item.color }}>
-                        {pct(item.value)}%
+                        {hidden ? '••%' : `${pct(item.value)}%`}
                       </span>
                     </div>
                     <div className="h-2 rounded-full overflow-hidden" style={{ background: '#f1f5f9' }}>
                       <div
                         className="h-full rounded-full transition-all duration-700"
-                        style={{ width: `${pct(item.value)}%`, background: item.color }}
+                        style={{ width: hidden ? '100%' : `${pct(item.value)}%`, background: hidden ? '#e2e8f0' : item.color }}
                       />
                     </div>
                   </div>
@@ -284,7 +318,7 @@ export function DashboardView() {
               <AnimatedList page={txPage}>
                 <div className="divide-y" style={{ borderColor: '#f1f5f9' }}>
                   {recentTx.slice(txPage * PAGE_SIZE, txPage * PAGE_SIZE + PAGE_SIZE).map(tx => (
-                    <TransactionItem key={tx.id} tx={tx} />
+                    <TransactionItem key={tx.id} tx={tx} hidden={hidden} />
                   ))}
                 </div>
               </AnimatedList>

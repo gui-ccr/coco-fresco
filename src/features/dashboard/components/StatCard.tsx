@@ -5,9 +5,10 @@ interface StatCardProps {
   value:      number;
   icon:       string;
   isPositive: boolean;
+  hidden?:    boolean;
 }
 
-export function StatCard({ label, value, icon, isPositive }: StatCardProps) {
+export function StatCard({ label, value, icon, isPositive, hidden }: StatCardProps) {
   return (
     <div
       className="flex-1 rounded-2xl p-4"
@@ -26,7 +27,7 @@ export function StatCard({ label, value, icon, isPositive }: StatCardProps) {
         className="text-xl font-black tabular-nums leading-tight"
         style={{ color: isPositive ? '#059669' : '#ea580c' }}
       >
-        {formatBRL(value)}
+        {hidden ? 'R$ ••••' : formatBRL(value)}
       </p>
     </div>
   );
