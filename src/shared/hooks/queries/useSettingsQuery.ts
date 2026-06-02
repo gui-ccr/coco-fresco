@@ -34,9 +34,10 @@ export function useSettingsQuery() {
       }
       return loadFromStorage();
     },
-    enabled:     IS_CONFIGURED,
-    initialData: loadFromStorage,
-    staleTime:   1000 * 60 * 10, // 10 min
+    enabled:              IS_CONFIGURED,
+    initialData:          loadFromStorage,
+    initialDataUpdatedAt: 0,
+    staleTime:            1000 * 60 * 10, // 10 min
   });
 }
 

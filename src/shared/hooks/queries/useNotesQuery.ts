@@ -49,8 +49,9 @@ export function useNotesQuery() {
       saveToStorage(merged);
       return merged;
     },
-    enabled:     IS_CONFIGURED,
-    initialData: () => sortNotes(loadFromStorage()),
+    enabled:              IS_CONFIGURED,
+    initialData:          () => sortNotes(loadFromStorage()),
+    initialDataUpdatedAt: 0,
   });
 }
 

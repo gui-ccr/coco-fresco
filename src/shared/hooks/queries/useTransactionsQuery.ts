@@ -9,8 +9,9 @@ export function useTransactionsQuery() {
   return useQuery({
     queryKey: TX_KEY,
     queryFn:  fetchTransactions,
-    enabled:  IS_CONFIGURED,
-    initialData: (): Transaction[] => [],
+    enabled:             IS_CONFIGURED,
+    initialData:         (): Transaction[] => [],
+    initialDataUpdatedAt: 0,
   });
 }
 

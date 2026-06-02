@@ -10,12 +10,13 @@ export function useWorkDayQuery() {
   const query = useQuery({
     queryKey: WORKDAY_KEY,
     queryFn:  fetchWorkDays,
-    enabled:  IS_CONFIGURED,
-    initialData: (): WorkDay[] => [],
+    enabled:             IS_CONFIGURED,
+    initialData:         (): WorkDay[] => [],
+    initialDataUpdatedAt: 0,
   });
 
   const today     = query.data?.find(d => d.date === todayDate()) ?? null;
-  const needsInit = !query.isFetching && IS_CONFIGURED && today === null;
+  const needsInit = !query.isError && !query.isFetching && IS_CONFIGURED && today === null;
 
   return { ...query, today, needsInit };
 }

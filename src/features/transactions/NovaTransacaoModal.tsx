@@ -36,7 +36,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, areaFilter, onGoTo
   const [mounted, setMounted]         = useState(isOpen);
   const [step, setStep]               = useState<Step>('category');
   const [selectedCat, setSelectedCat] = useState<Category | null>(null);
-  const [quickQty, setQuickQty]       = useState('1');
+  const [quickQty, setQuickQty]       = useState('');
   const [quantity, setQuantity]       = useState('');
   const [amount, setAmount]           = useState('');
   const [note, setNote]               = useState('');
@@ -48,7 +48,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, areaFilter, onGoTo
   function resetState() {
     setStep('category');
     setSelectedCat(null);
-    setQuickQty('1');
+    setQuickQty('');
     setQuantity('');
     setAmount('');
     setNote('');
@@ -87,7 +87,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, areaFilter, onGoTo
   // ── Navigation ────────────────────────────────────────────────────────────
   function handleCatSelect(cat: Category) {
     setSelectedCat(cat);
-    if (QUICK_SALE_CATS.includes(cat)) { setQuickQty('1'); setStep('quick_qty'); }
+    if (QUICK_SALE_CATS.includes(cat)) { setQuickQty(''); setStep('quick_qty'); }
     else if (REPO_CATS.includes(cat))  { setQuantity(''); setStep('quantity'); }
     else                               { setAmount(''); setStep('amount'); }
   }

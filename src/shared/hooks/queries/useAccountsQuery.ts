@@ -74,8 +74,9 @@ export function useAccountsQuery() {
       saveToStorage(merged);
       return merged;
     },
-    enabled:     IS_CONFIGURED,
-    initialData: () => sortByCreated(loadFromStorage()),
+    enabled:              IS_CONFIGURED,
+    initialData:          () => sortByCreated(loadFromStorage()),
+    initialDataUpdatedAt: 0,
   });
 }
 
