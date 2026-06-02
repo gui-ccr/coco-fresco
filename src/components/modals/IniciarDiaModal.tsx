@@ -53,7 +53,7 @@ export function IniciarDiaModal({ onConfirm }: Props) {
 
       <div
         ref={sheetRef}
-        className="fixed bottom-0 left-1/2 z-50 flex flex-col rounded-t-3xl overflow-hidden"
+        className="fixed bottom-0 left-1/2 z-50 flex flex-col rounded-t-3xl"
         style={{
           transform: 'translateX(-50%)',
           width: '100%', maxWidth: '448px',
@@ -61,77 +61,81 @@ export function IniciarDiaModal({ onConfirm }: Props) {
           boxShadow: '0 -8px 48px rgba(0,0,0,0.22)',
           maxHeight: '92svh',
           willChange: 'transform',
+          overflow: 'hidden',
         }}
       >
         {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1">
+        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
           <div className="w-10 h-1.5 rounded-full" style={{ background: '#e2e8f0' }} />
         </div>
 
-        {/* Header */}
-        <div className="px-6 pt-4 pb-5 text-center">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: 'linear-gradient(135deg, #fef9c3, #fde68a)' }}
-          >
-            <Sun size={26} style={{ color: '#d97706' }} strokeWidth={2.5} />
-          </div>
-          <h2 className="text-xl font-black" style={{ color: '#0f172a' }}>
-            Bom dia! ☀️
-          </h2>
-          <p className="text-sm mt-1.5 leading-relaxed" style={{ color: '#64748b' }}>
-            Com quanto você está começando o dia hoje?
-          </p>
-        </div>
-
-        {/* Visor */}
-        <div
-          className="mx-5 mb-3 rounded-2xl flex flex-col items-center justify-center py-6"
-          style={{ background: 'linear-gradient(145deg, #f0fdf4, #dcfce7)' }}
-        >
-          <p
-            className="text-5xl font-black tabular-nums tracking-tight"
-            style={{ color: amount ? '#059669' : '#94a3b8' }}
-          >
-            {amount ? `R$ ${amount}` : 'R$ 0,00'}
-          </p>
-          <p className="text-xs font-medium mt-1.5" style={{ color: '#6ee7b7' }}>
-            capital inicial do dia
-          </p>
-        </div>
-
-        {/* Preview */}
-        {canConfirm && (
-          <div
-            className="mx-5 mb-2 rounded-xl px-4 py-2 flex items-center justify-between"
-            style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}
-          >
-            <p className="text-xs font-medium" style={{ color: '#64748b' }}>Você vai começar com</p>
-            <p className="text-sm font-black tabular-nums" style={{ color: '#059669' }}>{formatBRL(value)}</p>
-          </div>
-        )}
-
-        {/* Numpad */}
-        <div className="px-5 grid grid-cols-3 gap-2 mb-4">
-          {['1','2','3','4','5','6','7','8','9',',','0','⌫'].map(key => (
-            <button
-              key={key}
-              onClick={() => handleNumpad(key)}
-              className="h-14 rounded-2xl text-lg font-bold active:scale-95 transition-all duration-75"
-              style={{
-                background: key === '⌫' ? '#fee2e2' : '#f8fafc',
-                color:      key === '⌫' ? '#dc2626' : '#0f172a',
-                border: '1.5px solid #e2e8f0',
-                fontFamily: 'inherit',
-              }}
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {/* Header */}
+          <div className="px-6 pt-3 pb-4 text-center">
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
+              style={{ background: 'linear-gradient(135deg, #fef9c3, #fde68a)' }}
             >
-              {key}
-            </button>
-          ))}
+              <Sun size={26} style={{ color: '#d97706' }} strokeWidth={2.5} />
+            </div>
+            <h2 className="text-xl font-black" style={{ color: '#0f172a' }}>
+              Bom dia! ☀️
+            </h2>
+            <p className="text-sm mt-1 leading-relaxed" style={{ color: '#64748b' }}>
+              Com quanto você está começando o dia hoje?
+            </p>
+          </div>
+
+          {/* Visor */}
+          <div
+            className="mx-5 mb-3 rounded-2xl flex flex-col items-center justify-center py-5"
+            style={{ background: 'linear-gradient(145deg, #f0fdf4, #dcfce7)' }}
+          >
+            <p
+              className="text-5xl font-black tabular-nums tracking-tight"
+              style={{ color: amount ? '#059669' : '#94a3b8' }}
+            >
+              {amount ? `R$ ${amount}` : 'R$ 0,00'}
+            </p>
+            <p className="text-xs font-medium mt-1.5" style={{ color: '#6ee7b7' }}>
+              capital inicial do dia
+            </p>
+          </div>
+
+          {/* Preview */}
+          {canConfirm && (
+            <div
+              className="mx-5 mb-2 rounded-xl px-4 py-2 flex items-center justify-between"
+              style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}
+            >
+              <p className="text-xs font-medium" style={{ color: '#64748b' }}>Você vai começar com</p>
+              <p className="text-sm font-black tabular-nums" style={{ color: '#059669' }}>{formatBRL(value)}</p>
+            </div>
+          )}
+
+          {/* Numpad */}
+          <div className="px-5 grid grid-cols-3 gap-2 mb-3">
+            {['1','2','3','4','5','6','7','8','9',',','0','⌫'].map(key => (
+              <button
+                key={key}
+                onClick={() => handleNumpad(key)}
+                className="h-14 rounded-2xl text-lg font-bold active:scale-95 transition-all duration-75"
+                style={{
+                  background: key === '⌫' ? '#fee2e2' : '#f8fafc',
+                  color:      key === '⌫' ? '#dc2626' : '#0f172a',
+                  border: '1.5px solid #e2e8f0',
+                  fontFamily: 'inherit',
+                }}
+              >
+                {key}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* CTA */}
-        <div className="px-5 pb-8">
+        {/* CTA — fixo no rodapé */}
+        <div className="px-5 pt-2 pb-6 flex-shrink-0" style={{ background: '#ffffff' }}>
           <button
             onClick={handleConfirm}
             disabled={!canConfirm}
