@@ -9,6 +9,7 @@ const PRIMARY_TABS = [
 
 // Active color for each secondary tab — matches their page header gradient
 const SECONDARY_COLORS: Record<string, string> = {
+  estoque:   '#0369a1',
   relatorio: '#3730a3',
   accounts:  '#7c3aed',
   notes:     '#d97706',
@@ -20,7 +21,7 @@ export const SECONDARY_TAB_IDS = Object.keys(SECONDARY_COLORS);
 // Full order for PageTransition direction calculation
 export const TAB_ORDER: string[] = [
   'dashboard', 'trabalho', 'casa', 'aleatorio',
-  'relatorio', 'accounts', 'notes', 'config',
+  'estoque', 'relatorio', 'accounts', 'notes', 'config',
 ];
 
 interface BottomNavProps {

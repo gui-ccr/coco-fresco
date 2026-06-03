@@ -9,6 +9,7 @@ import { SettingsView } from '@/features/settings/SettingsView';
 import { RelatorioView } from '@/features/reports/RelatorioView';
 import { AccountsView } from '@/features/accounts/AccountsView';
 import { NotesView } from '@/features/notes/NotesView';
+import { EstoqueView } from '@/features/estoque/EstoqueView';
 import {
   useAddTransactionMutation,
   useUpdateTransactionMutation,
@@ -51,6 +52,7 @@ function App() {
       case 'trabalho':  return <AreaView areaId="trabalho"  onAdd={() => openAreaModal('trabalho'  as AreaId)} onEdit={handleEdit} onDelete={handleDelete} />;
       case 'casa':      return <AreaView areaId="casa"      onAdd={() => openAreaModal('casa'      as AreaId)} onEdit={handleEdit} onDelete={handleDelete} />;
       case 'aleatorio': return <AreaView areaId="aleatorio" onAdd={() => openAreaModal('aleatorio' as AreaId)} onEdit={handleEdit} onDelete={handleDelete} />;
+      case 'estoque':   return <EstoqueView />;
       case 'relatorio': return <RelatorioView onSubModalChange={setSubModalOpen} />;
       case 'accounts':  return <AccountsView />;
       case 'notes':     return <NotesView />;

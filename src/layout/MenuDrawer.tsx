@@ -1,8 +1,16 @@
 import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
-import { BarChart2, CreditCard, StickyNote, Settings, X } from 'lucide-react';
+import { BarChart2, CreditCard, StickyNote, Settings, X, Package } from 'lucide-react';
 
 const MENU_ITEMS = [
+  {
+    id:          'estoque',
+    label:       'Estoque',
+    description: 'Copos e garrafas do dia',
+    Icon:        Package,
+    color:       '#0369a1',
+    bg:          '#e0f2fe',
+  },
   {
     id:          'relatorio',
     label:       'Relatório',
