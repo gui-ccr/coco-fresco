@@ -18,13 +18,16 @@ interface Props {
   isOpen:          boolean;
   onClose:         () => void;
   onSave:          (tx: Omit<Transaction, 'id' | 'when'>, when: string) => void;
+  onUpdate?:       (id: string, tx: Omit<Transaction, 'id' | 'when'>, when: string) => void;
+  editingTx?:      Transaction | null;
   areaFilter?:     AreaId;
   onGoToSettings?: () => void;
 }
 
-export function NovaTransacaoModal({ isOpen, onClose, onSave, areaFilter, onGoToSettings }: Props) {
+export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingTx, areaFilter, onGoToSettings }: Props) {
   const { data: settings = DEFAULT_SETTINGS } = useSettingsQuery();
-  const showDatePicker   = !!areaFilter;
+  const isEditMode       = !!editingTx;
+  const showDatePicker   = !!areaFilter || isEditMode;
   const showQuickSales   = !areaFilter || areaFilter === 'trabalho';
   const visibleGroups    = areaFilter
     ? EXPENSE_GROUPS.filter(g =>
@@ -60,13 +63,36 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, areaFilter, onGoTo
   useEffect(() => {
     if (isOpen) return;
 
+    resetState();
     const sheet    = sheetRef.current;
     const backdrop = backdropRef.current;
     if (!sheet) { setMounted(false); return; }
 
     gsap.to(sheet,    { y: '100%', duration: 0.35, ease: 'power3.in' });
-    gsap.to(backdrop, { opacity: 0, duration: 0.28, onComplete: () => { setMounted(false); resetState(); } });
+    gsap.to(backdrop, { opacity: 0, duration: 0.28, onComplete: () => setMounted(false) });
   }, [isOpen]);
+
+  // Pré-preenche os campos quando abre em modo edição
+  useEffect(() => {
+    if (!isOpen || !editingTx) return;
+
+    setSelectedCat(editingTx.cat);
+    setNote(editingTx.note ?? '');
+    setSelectedDate(new Date(editingTx.when).toLocaleDateString('en-CA'));
+
+    if (QUICK_SALE_CATS.includes(editingTx.cat)) {
+      const unitPrice = settings.precoVenda[editingTx.cat as keyof AppSettings['precoVenda']] ?? 0;
+      setQuickQty(unitPrice > 0 ? String(Math.round(editingTx.value / unitPrice)) : '1');
+      setStep('quick_qty');
+    } else if (REPO_CATS.includes(editingTx.cat)) {
+      const cost = settings.custoUnit[editingTx.cat as keyof AppSettings['custoUnit']] ?? 0;
+      setQuantity(cost > 0 ? String(Math.round(editingTx.value / cost)) : '1');
+      setStep('quantity');
+    } else {
+      setAmount(editingTx.value.toFixed(2).replace('.', ','));
+      setStep('amount');
+    }
+  }, [editingTx?.id, isOpen]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -108,9 +134,14 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, areaFilter, onGoTo
     const val = getFinalAmount();
     if (!selectedCat || val <= 0) return;
     const autoNote = buildAutoNote();
-    const dateStr = showDatePicker ? selectedDate : todayValue();
-    const when = new Date(dateStr + 'T12:00:00').toISOString();
-    onSave({ cat: selectedCat, value: val, note: note || autoNote || undefined }, when);
+    const when = new Date(selectedDate + 'T12:00:00').toISOString();
+    const txData = { cat: selectedCat, value: val, note: note || autoNote || undefined };
+
+    if (isEditMode && editingTx && onUpdate) {
+      onUpdate(editingTx.id, txData, when);
+    } else {
+      onSave(txData, when);
+    }
     onClose();
   }
 
@@ -202,7 +233,8 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, areaFilter, onGoTo
         <div className="flex items-center justify-between px-5 py-3 shrink-0">
           <div>
             <p className="text-[10px] font-black tracking-widest uppercase" style={{ color: '#94a3b8' }}>
-              {step === 'category'  ? 'O que foi?' :
+              {isEditMode ? 'Editar lançamento' :
+               step === 'category'  ? 'O que foi?' :
                step === 'quick_qty' ? 'Quantas unidades vendidas?' :
                step === 'quantity'  ? 'Quantas unidades?' :
                step === 'amount'    ? 'Qual o valor?' :
@@ -623,7 +655,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, areaFilter, onGoTo
                 }}
               >
                 <Check size={18} strokeWidth={3} />
-                Confirmar
+                {isEditMode ? 'Salvar alterações' : 'Confirmar'}
               </button>
             </div>
           </div>

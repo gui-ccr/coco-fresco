@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { IS_CONFIGURED } from '@/config/axios';
-import { fetchTransactions, insertTransaction, deleteTransaction } from '@/shared/services/transactionService';
+import { fetchTransactions, insertTransaction, updateTransaction, deleteTransaction } from '@/shared/services/transactionService';
 import type { Transaction } from '@/shared/types/transaction';
 
 export const TX_KEY = ['transactions'] as const;
@@ -38,6 +38,38 @@ export function useAddTransactionMutation() {
         [optimistic, ...(old ?? [])].sort(
           (a, b) => new Date(b.when).getTime() - new Date(a.when).getTime()
         )
+      );
+
+      return { previous };
+    },
+
+    onError: (_err, _vars, ctx) => {
+      qc.setQueryData(TX_KEY, ctx?.previous);
+    },
+
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: TX_KEY });
+    },
+  });
+}
+
+type TxUpdate = Partial<Pick<Transaction, 'cat' | 'value' | 'when' | 'note'>>;
+
+export function useUpdateTransactionMutation() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: TxUpdate }) =>
+      updateTransaction(id, updates),
+
+    onMutate: async ({ id, updates }) => {
+      await qc.cancelQueries({ queryKey: TX_KEY });
+      const previous = qc.getQueryData<Transaction[]>(TX_KEY) ?? [];
+
+      qc.setQueryData<Transaction[]>(TX_KEY, old =>
+        (old ?? [])
+          .map(t => t.id === id ? { ...t, ...updates } : t)
+          .sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime())
       );
 
       return { previous };

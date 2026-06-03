@@ -32,6 +32,19 @@ export async function insertTransaction(tx: NewTx): Promise<Transaction> {
   return rowToTx(data[0]);
 }
 
+export async function updateTransaction(
+  id: string,
+  updates: Partial<Pick<Transaction, 'cat' | 'value' | 'when' | 'note'>>
+): Promise<Transaction> {
+  const { data } = await api.patch<TxRow[]>('/transactions', {
+    ...(updates.cat   !== undefined && { cat:   updates.cat }),
+    ...(updates.value !== undefined && { value: updates.value }),
+    ...(updates.when  !== undefined && { when:  updates.when }),
+    ...(updates.note  !== undefined && { note:  updates.note ?? null }),
+  }, { params: { id: `eq.${id}` } });
+  return rowToTx(data[0]);
+}
+
 export async function deleteTransaction(id: string): Promise<void> {
   await api.delete('/transactions', { params: { id: `eq.${id}` } });
 }
