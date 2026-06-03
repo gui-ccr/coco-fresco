@@ -134,7 +134,11 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
     const val = getFinalAmount();
     if (!selectedCat || val <= 0) return;
     const autoNote = buildAutoNote();
-    const when = new Date(selectedDate + 'T12:00:00').toISOString();
+    // Lançamentos de hoje usam o horário real; datas passadas usam meio-dia
+    // para evitar o bug de timezone onde YYYY-MM-DD sem hora é tratado como UTC
+    const when = selectedDate === todayValue()
+      ? new Date().toISOString()
+      : new Date(selectedDate + 'T12:00:00').toISOString();
     const txData = { cat: selectedCat, value: val, note: note || autoNote || undefined };
 
     if (isEditMode && editingTx && onUpdate) {
