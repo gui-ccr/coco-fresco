@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { gsap } from 'gsap';
-import { Sun, Check } from 'lucide-react';
+import { Sun, Check, X } from 'lucide-react';
 import { formatBRL } from '@/shared/lib/format';
 
 interface Props {
   onConfirm: (capitalInit: number) => void;
+  onDismiss?: () => void;
 }
 
-export function IniciarDiaModal({ onConfirm }: Props) {
+export function IniciarDiaModal({ onConfirm, onDismiss }: Props) {
   const [amount, setAmount] = useState('');
   const sheetRef    = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -43,11 +44,11 @@ export function IniciarDiaModal({ onConfirm }: Props) {
 
   return (
     <>
-      {/* Backdrop — não fechável: dia PRECISA ser iniciado */}
       <div
         ref={backdropRef}
         className="fixed inset-0 z-50"
         style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+        onClick={onDismiss}
       />
 
       <div
@@ -71,7 +72,16 @@ export function IniciarDiaModal({ onConfirm }: Props) {
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto min-h-0">
           {/* Header */}
-          <div className="px-6 pt-3 pb-4 text-center">
+          <div className="px-6 pt-3 pb-4 text-center relative">
+            {onDismiss && (
+              <button
+                onClick={onDismiss}
+                className="absolute right-4 top-0 flex items-center justify-center rounded-full transition-all active:scale-90"
+                style={{ width: 36, height: 36, background: '#f1f5f9' }}
+              >
+                <X size={16} style={{ color: '#64748b' }} />
+              </button>
+            )}
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
               style={{ background: 'linear-gradient(135deg, #fef9c3, #fde68a)' }}

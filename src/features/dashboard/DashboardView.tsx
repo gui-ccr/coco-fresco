@@ -1,6 +1,6 @@
 import { useMemo, useState, useRef, useLayoutEffect, useCallback } from 'react';
 import { gsap } from 'gsap';
-import { TrendingUp, TrendingDown, AlertCircle, Wallet, Eye, EyeOff } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertCircle, Wallet, Eye, EyeOff, Sun, ChevronRight } from 'lucide-react';
 import { CATEGORY_META } from '@/shared/types/transaction';
 import { formatBRL, greeting, toLocalDate, todayDate } from '@/shared/lib/format';
 import { TransactionItem } from '@/shared/components/TransactionItem';
@@ -9,7 +9,8 @@ import { AnimatedTitle } from './components/AnimatedTitle';
 import { StatCard } from './components/StatCard';
 import { AREA_COLORS } from './constants/areaColors';
 import { useTransactionsQuery } from '@/shared/hooks/queries/useTransactionsQuery';
-import { useWorkDayQuery } from '@/shared/hooks/queries/useWorkDayQuery';
+import { useWorkDayQuery, useInitDayMutation } from '@/shared/hooks/queries/useWorkDayQuery';
+import { IniciarDiaModal } from '@/features/work-day/IniciarDiaModal';
 
 function AnimatedList({ page, children }: { page: number; children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -77,11 +78,13 @@ function mask(formatted: string, hidden: boolean): string {
 
 export function DashboardView() {
   const { data: transactions = [] } = useTransactionsQuery();
-  const { today: workDay }          = useWorkDayQuery();
+  const { today: workDay, needsInit } = useWorkDayQuery();
+  const initDayMutation = useInitDayMutation();
 
   const today  = todayDate();
-  const [txPage,  setTxPage]  = useState(0);
-  const [hidden,  setHidden]  = useState(() => localStorage.getItem(PRIVACY_KEY) === '1');
+  const [txPage,       setTxPage]       = useState(0);
+  const [hidden,       setHidden]       = useState(() => localStorage.getItem(PRIVACY_KEY) === '1');
+  const [showInitModal, setShowInitModal] = useState(false);
 
   const toggleHidden = useCallback(() => {
     setHidden(prev => {
@@ -222,6 +225,33 @@ export function DashboardView() {
 
       {/* ─── Content ─── */}
       <div className="px-4 pt-5 space-y-5">
+
+        {needsInit && (
+          <button
+            onClick={() => setShowInitModal(true)}
+            className="w-full rounded-2xl p-4 flex items-center gap-4 active:scale-[0.98] transition-transform text-left"
+            style={{
+              background: 'linear-gradient(135deg, #fefce8, #fef9c3)',
+              border: '1.5px solid #fcd34d',
+              boxShadow: '0 2px 16px rgba(251,191,36,0.25)',
+            }}
+          >
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+              style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+            >
+              <Sun size={24} color="#d97706" strokeWidth={2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-sm" style={{ color: '#92400e' }}>Iniciar o dia de trabalho</p>
+              <p className="text-xs mt-0.5" style={{ color: '#b45309' }}>
+                Registre o capital inicial para começar
+              </p>
+            </div>
+            <ChevronRight size={20} color="#b45309" strokeWidth={2.5} className="flex-shrink-0" />
+          </button>
+        )}
+
         <div className="flex gap-3">
           <StatCard label="Vendas hoje" value={totalIncome}   icon="💚" isPositive={true}  hidden={hidden} />
           <StatCard label="Gastos hoje" value={totalExpenses} icon="🔴" isPositive={false} hidden={hidden} />
@@ -329,6 +359,16 @@ export function DashboardView() {
 
         <div className="h-2" />
       </div>
+
+      {showInitModal && (
+        <IniciarDiaModal
+          onConfirm={(capitalInit) => {
+            initDayMutation.mutate({ date: todayDate(), capitalInit });
+            setShowInitModal(false);
+          }}
+          onDismiss={() => setShowInitModal(false)}
+        />
+      )}
     </div>
   );
 }

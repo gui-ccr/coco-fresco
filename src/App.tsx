@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { AppLayout } from '@/layout/AppLayout';
 import { NovaTransacaoModal } from '@/features/transactions/NovaTransacaoModal';
-import { IniciarDiaModal } from '@/features/work-day/IniciarDiaModal';
 import { DashboardView } from '@/features/dashboard/DashboardView';
 import { AreaView } from '@/features/work/AreaView';
 import { SettingsView } from '@/features/settings/SettingsView';
@@ -15,8 +14,6 @@ import {
   useUpdateTransactionMutation,
   useRemoveTransactionMutation,
 } from '@/shared/hooks/queries/useTransactionsQuery';
-import { useWorkDayQuery, useInitDayMutation } from '@/shared/hooks/queries/useWorkDayQuery';
-import { todayDate } from '@/shared/lib/format';
 import type { AreaId } from '@/shared/types/area';
 import type { Transaction } from '@/shared/types/transaction';
 
@@ -31,11 +28,9 @@ function App() {
   const [editingTx, setEditingTx]       = useState<Transaction | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
-  const { needsInit }   = useWorkDayQuery();
-  const addTxMutation   = useAddTransactionMutation();
+  const addTxMutation    = useAddTransactionMutation();
   const updateTxMutation = useUpdateTransactionMutation();
   const removeTxMutation = useRemoveTransactionMutation();
-  const initDayMutation = useInitDayMutation();
 
   function handleEdit(tx: Transaction) {
     setEditingTx(tx);
@@ -90,13 +85,6 @@ function App() {
         onGoToSettings={() => setActiveTab('config')}
       />
 
-      {needsInit && (
-        <IniciarDiaModal
-          onConfirm={(capitalInit) =>
-            initDayMutation.mutate({ date: todayDate(), capitalInit })
-          }
-        />
-      )}
     </>
   );
 }
