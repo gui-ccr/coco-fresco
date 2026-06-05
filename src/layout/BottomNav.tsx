@@ -11,7 +11,6 @@ const PRIMARY_TABS = [
 const SECONDARY_COLORS: Record<string, string> = {
   estoque:   '#0369a1',
   relatorio: '#3730a3',
-  accounts:  '#7c3aed',
   notes:     '#d97706',
   config:    '#4f46e5',
 };
@@ -21,7 +20,7 @@ export const SECONDARY_TAB_IDS = Object.keys(SECONDARY_COLORS);
 // Full order for PageTransition direction calculation
 export const TAB_ORDER: string[] = [
   'dashboard', 'trabalho', 'casa', 'aleatorio',
-  'estoque', 'relatorio', 'accounts', 'notes', 'config',
+  'estoque', 'relatorio', 'notes', 'config',
 ];
 
 interface BottomNavProps {

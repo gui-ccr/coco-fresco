@@ -6,9 +6,12 @@ import { DayCard, buildSummaries } from './components/DayCard';
 import { Pagination } from '@/shared/components/Pagination';
 import { useTransactionsQuery } from '@/shared/hooks/queries/useTransactionsQuery';
 import { useWorkDayQuery } from '@/shared/hooks/queries/useWorkDayQuery';
+import type { Transaction } from '@/shared/types/transaction';
 
 interface Props {
   onSubModalChange?: (open: boolean) => void;
+  onEdit?:           (tx: Transaction) => void;
+  onDelete?:         (id: string) => void;
 }
 
 type Period = 'all' | 'week' | 'month';
@@ -227,7 +230,7 @@ function Calendar({ isOpen, recordDates, selected, onSelect, onClose }: Calendar
 
 // ── Main view ──────────────────────────────────────────────────────────────
 
-export function RelatorioView({ onSubModalChange }: Props) {
+export function RelatorioView({ onSubModalChange, onEdit, onDelete }: Props) {
   const { data: transactions = [] } = useTransactionsQuery();
   const { data: workDays = [] }     = useWorkDayQuery();
   const [period, setPeriod]             = useState<Period>('all');
@@ -382,7 +385,14 @@ export function RelatorioView({ onSubModalChange }: Props) {
           <>
             <AnimatedList page={page}>
               <div className="space-y-3">
-                {paginated.map(s => <DayCard key={s.workDay.id} summary={s} />)}
+                {paginated.map(s => (
+                  <DayCard
+                    key={s.workDay.id}
+                    summary={s}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                  />
+                ))}
               </div>
             </AnimatedList>
             <Pagination page={page} total={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />

@@ -6,7 +6,6 @@ import { DashboardView } from '@/features/dashboard/DashboardView';
 import { AreaView } from '@/features/work/AreaView';
 import { SettingsView } from '@/features/settings/SettingsView';
 import { RelatorioView } from '@/features/reports/RelatorioView';
-import { AccountsView } from '@/features/accounts/AccountsView';
 import { NotesView } from '@/features/notes/NotesView';
 import { EstoqueView } from '@/features/estoque/EstoqueView';
 import {
@@ -48,8 +47,7 @@ function App() {
       case 'casa':      return <AreaView areaId="casa"      onAdd={() => openAreaModal('casa'      as AreaId)} onEdit={handleEdit} onDelete={handleDelete} />;
       case 'aleatorio': return <AreaView areaId="aleatorio" onAdd={() => openAreaModal('aleatorio' as AreaId)} onEdit={handleEdit} onDelete={handleDelete} />;
       case 'estoque':   return <EstoqueView />;
-      case 'relatorio': return <RelatorioView onSubModalChange={setSubModalOpen} />;
-      case 'accounts':  return <AccountsView />;
+      case 'relatorio': return <RelatorioView onSubModalChange={setSubModalOpen} onEdit={handleEdit} onDelete={handleDelete} />;
       case 'notes':     return <NotesView />;
       case 'config':    return <SettingsView />;
       default:          return <DashboardView />;

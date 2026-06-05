@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
-import { BarChart2, CreditCard, StickyNote, Settings, X, Package } from 'lucide-react';
+import { BarChart2, StickyNote, Settings, X, Package } from 'lucide-react';
 
 const MENU_ITEMS = [
   {
@@ -18,14 +18,6 @@ const MENU_ITEMS = [
     Icon:        BarChart2,
     color:       '#3730a3',
     bg:          '#e0e7ff',
-  },
-  {
-    id:          'accounts',
-    label:       'Contas',
-    description: 'Empréstimos, cartões e dívidas',
-    Icon:        CreditCard,
-    color:       '#7c3aed',
-    bg:          '#ede9fe',
   },
   {
     id:          'notes',

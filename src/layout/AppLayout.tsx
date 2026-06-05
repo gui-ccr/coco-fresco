@@ -14,7 +14,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ activeTab, setActiveTab, onOpenModal, subModalOpen = false, children }: AppLayoutProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const showFab = !['config', 'accounts', 'notes', 'estoque'].includes(activeTab) && !isDrawerOpen && !subModalOpen;
+  const showFab = !['config', 'notes', 'estoque'].includes(activeTab) && !isDrawerOpen && !subModalOpen;
 
   return (
     <div className="min-h-screen flex justify-center" style={{ background: '#f0f7f4' }}>

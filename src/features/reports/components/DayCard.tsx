@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import { type Transaction, CATEGORY_META } from '@/shared/types/transaction';
 import { type WorkDay } from '@/shared/types/workDay';
 import { formatBRL, formatFullDate, formatShortDate, toLocalDate } from '@/shared/lib/format';
@@ -29,12 +29,15 @@ export function buildSummaries(workDays: WorkDay[], transactions: Transaction[])
 }
 
 interface DayCardProps {
-  summary: DaySummary;
+  summary:   DaySummary;
+  onEdit?:   (tx: Transaction) => void;
+  onDelete?: (id: string) => void;
 }
 
-export const DayCard = memo(function DayCard({ summary }: DayCardProps) {
+export const DayCard = memo(function DayCard({ summary, onEdit, onDelete }: DayCardProps) {
   const [expanded, setExpanded] = useState(false);
   const { workDay, entradas, saidas, saldoFinal } = summary;
+  const isEditable = !!(onEdit || onDelete);
   const isToday    = workDay.date === new Date().toLocaleDateString('en-CA');
   const isPositive = saldoFinal >= 0;
 
@@ -54,9 +57,20 @@ export const DayCard = memo(function DayCard({ summary }: DayCardProps) {
                 <span className="text-sm">{isToday ? '📅' : '📆'}</span>
               </div>
               <div>
-                <p className="text-xs font-black uppercase tracking-wider" style={{ color: isToday ? '#059669' : '#94a3b8' }}>
-                  {isToday ? 'Hoje' : formatShortDate(workDay.date)}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-black uppercase tracking-wider" style={{ color: isToday ? '#059669' : '#94a3b8' }}>
+                    {isToday ? 'Hoje' : formatShortDate(workDay.date)}
+                  </p>
+                  {isEditable && summary.txs.length > 0 && (
+                    <div
+                      className="flex items-center gap-0.5 rounded-md px-1.5 py-0.5"
+                      style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}
+                    >
+                      <Pencil size={8} style={{ color: '#2563eb' }} />
+                      <span className="text-[8px] font-black" style={{ color: '#2563eb' }}>editável</span>
+                    </div>
+                  )}
+                </div>
                 <p className="text-sm font-bold capitalize" style={{ color: '#0f172a' }}>
                   {formatFullDate(workDay.date)}
                 </p>
@@ -110,7 +124,13 @@ export const DayCard = memo(function DayCard({ summary }: DayCardProps) {
           ) : (
             <div className="divide-y" style={{ borderColor: '#f1f5f9' }}>
               {summary.txs.map(tx => (
-                <TransactionItem key={tx.id} tx={tx} variant="compact" />
+                <TransactionItem
+                  key={tx.id}
+                  tx={tx}
+                  variant="compact"
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                />
               ))}
             </div>
           )}
