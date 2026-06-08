@@ -1,35 +1,10 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Package, Plus, Minus, TrendingDown, BarChart3 } from 'lucide-react';
 import { useTransactionsQuery } from '@/shared/hooks/queries/useTransactionsQuery';
 import { useSettingsQuery } from '@/shared/hooks/queries/useSettingsQuery';
+import { useDailyStockQuery, useUpsertDailyStockMutation } from '@/shared/hooks/queries/useDailyStockQuery';
 import { DEFAULT_SETTINGS } from '@/shared/types/settings';
 import { todayDate, toLocalDate, formatFullDate } from '@/shared/lib/format';
-
-const STORAGE_KEY = 'coco_estoque_v1';
-
-interface DailyStock {
-  date: string;
-  copos: number;
-  g1l: number;
-  g500: number;
-  g300: number;
-}
-
-function loadStock(): DailyStock {
-  const today = todayDate();
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed: DailyStock = JSON.parse(raw);
-      if (parsed.date === today) return parsed;
-    }
-  } catch {}
-  return { date: today, copos: 0, g1l: 0, g500: 0, g300: 0 };
-}
-
-function saveStock(stock: DailyStock) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(stock));
-}
 
 type StockKey = 'copos' | 'g1l' | 'g500' | 'g300';
 
@@ -81,12 +56,23 @@ const CONTAINERS: {
 ];
 
 export function EstoqueView() {
-  const [stock, setStock] = useState<DailyStock>(loadStock);
+  const today = todayDate();
+
+  const { data: stockData, isLoading } = useDailyStockQuery(today);
+  const { mutate: upsertStock } = useUpsertDailyStockMutation();
 
   const { data: transactions = [] } = useTransactionsQuery();
   const { data: settings = DEFAULT_SETTINGS } = useSettingsQuery();
 
-  const today = todayDate();
+  const stock = useMemo(
+    () => ({
+      copos: stockData?.copos ?? 0,
+      g1l:   stockData?.g1l   ?? 0,
+      g500:  stockData?.g500  ?? 0,
+      g300:  stockData?.g300  ?? 0,
+    }),
+    [stockData]
+  );
 
   const todayTxs = useMemo(
     () => transactions.filter(tx => toLocalDate(tx.when) === today),
@@ -116,12 +102,16 @@ export function EstoqueView() {
   }, [todayTxs, settings]);
 
   const adjust = useCallback((key: StockKey, delta: number) => {
-    setStock(prev => {
-      const next = { ...prev, [key]: Math.max(0, prev[key] + delta) };
-      saveStock(next);
-      return next;
-    });
-  }, []);
+    const next = {
+      date:  today,
+      copos: stock.copos,
+      g1l:   stock.g1l,
+      g500:  stock.g500,
+      g300:  stock.g300,
+      [key]: Math.max(0, stock[key] + delta),
+    };
+    upsertStock(next);
+  }, [stock, today, upsertStock]);
 
   const formattedDate = formatFullDate(today);
 
@@ -183,6 +173,9 @@ export function EstoqueView() {
             <p className="text-[11px] font-black tracking-widest uppercase" style={{ color: '#0369a1' }}>
               Início do Dia
             </p>
+            {isLoading && (
+              <span className="text-[10px] ml-auto" style={{ color: '#94a3b8' }}>carregando...</span>
+            )}
           </div>
 
           <div className="space-y-2.5">
@@ -216,7 +209,7 @@ export function EstoqueView() {
                     onClick={() => adjust(c.key, -1)}
                     className="w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
                     style={{ background: '#f1f5f9', border: '1.5px solid #e2e8f0' }}
-                    disabled={stock[c.key] === 0}
+                    disabled={stock[c.key] === 0 || isLoading}
                   >
                     <Minus size={16} color={stock[c.key] === 0 ? '#cbd5e1' : '#475569'} strokeWidth={2.5} />
                   </button>
@@ -232,6 +225,7 @@ export function EstoqueView() {
                     onClick={() => adjust(c.key, 1)}
                     className="w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
                     style={{ background: c.color }}
+                    disabled={isLoading}
                   >
                     <Plus size={16} color="#fff" strokeWidth={2.5} />
                   </button>
