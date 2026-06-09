@@ -12,6 +12,7 @@ interface Props {
   onSubModalChange?: (open: boolean) => void;
   onEdit?:           (tx: Transaction) => void;
   onDelete?:         (id: string) => void;
+  onEditStock?:      (date: string) => void;
 }
 
 type Period = 'all' | 'week' | 'month';
@@ -230,7 +231,7 @@ function Calendar({ isOpen, recordDates, selected, onSelect, onClose }: Calendar
 
 // ── Main view ──────────────────────────────────────────────────────────────
 
-export function RelatorioView({ onSubModalChange, onEdit, onDelete }: Props) {
+export function RelatorioView({ onSubModalChange, onEdit, onDelete, onEditStock }: Props) {
   const { data: transactions = [] } = useTransactionsQuery();
   const { data: workDays = [] }     = useWorkDayQuery();
   const [period, setPeriod]             = useState<Period>('all');
@@ -391,6 +392,7 @@ export function RelatorioView({ onSubModalChange, onEdit, onDelete }: Props) {
                     summary={s}
                     onEdit={onEdit}
                     onDelete={onDelete}
+                    onEditStock={onEditStock}
                   />
                 ))}
               </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
-import { X, ChevronRight, Zap, AlertTriangle, Check, Settings, CalendarDays } from 'lucide-react';
+import { X, ChevronRight, Zap, AlertTriangle, Check, Settings, CalendarDays, Pencil } from 'lucide-react';
 import { type Category, type Transaction, CATEGORY_META, QUICK_SALE_CATS, REPO_CATS } from '@/shared/types/transaction';
 import { type AreaId } from '@/shared/types/area';
 import { type AppSettings, DEFAULT_SETTINGS } from '@/shared/types/settings';
@@ -44,6 +44,8 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
   const [amount, setAmount]           = useState('');
   const [note, setNote]               = useState('');
   const [selectedDate, setSelectedDate] = useState(todayValue());
+  const [customUnitPrice, setCustomUnitPrice] = useState('');
+  const [editingPrice, setEditingPrice]       = useState(false);
 
   const sheetRef    = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -56,6 +58,8 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
     setAmount('');
     setNote('');
     setSelectedDate(todayValue());
+    setCustomUnitPrice('');
+    setEditingPrice(false);
   }
 
   if (isOpen && !mounted) setMounted(true);
@@ -113,6 +117,8 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
   // ── Navigation ────────────────────────────────────────────────────────────
   function handleCatSelect(cat: Category) {
     setSelectedCat(cat);
+    setCustomUnitPrice('');
+    setEditingPrice(false);
     if (QUICK_SALE_CATS.includes(cat)) { setQuickQty(''); setStep('quick_qty'); }
     else if (REPO_CATS.includes(cat))  { setQuantity(''); setStep('quantity'); }
     else                               { setAmount(''); setStep('amount'); }
@@ -150,10 +156,17 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
   }
 
   // ── Calculations ──────────────────────────────────────────────────────────
+  function getEffectiveUnitPrice(): number {
+    if (!selectedCat || !QUICK_SALE_CATS.includes(selectedCat)) return 0;
+    const settingsPrice = settings.precoVenda[selectedCat as keyof AppSettings['precoVenda']] ?? 0;
+    if (!customUnitPrice) return settingsPrice;
+    return parseFloat(customUnitPrice.replace(',', '.')) || settingsPrice;
+  }
+
   function getFinalAmount(): number {
     if (!selectedCat) return 0;
     if (QUICK_SALE_CATS.includes(selectedCat)) {
-      const unitPrice = settings.precoVenda[selectedCat as keyof AppSettings['precoVenda']] ?? 0;
+      const unitPrice = getEffectiveUnitPrice();
       return parseFloat(((parseInt(quickQty) || 1) * unitPrice).toFixed(2));
     }
     if (REPO_CATS.includes(selectedCat)) {
@@ -182,13 +195,15 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
     return '';
   }
 
-  function handleNumpad(digit: string, target: 'quickQty' | 'quantity' | 'amount') {
-    if (target === 'amount') {
-      if (digit === '⌫') { setAmount(prev => prev.slice(0, -1)); return; }
-      if (digit === ',' && (amount.includes(',') || amount === '')) return;
-      if (amount.split(',')[1]?.length >= 2) return;
-      if (amount.length >= 6) return;
-      setAmount(prev => prev + digit);
+  function handleNumpad(digit: string, target: 'quickQty' | 'quantity' | 'amount' | 'customPrice') {
+    if (target === 'amount' || target === 'customPrice') {
+      const val    = target === 'amount' ? amount : customUnitPrice;
+      const setter = target === 'amount' ? setAmount : setCustomUnitPrice;
+      if (digit === '⌫') { setter(prev => prev.slice(0, -1)); return; }
+      if (digit === ',' && (val.includes(',') || val === '')) return;
+      if (val.split(',')[1]?.length >= 2) return;
+      if (val.length >= 6) return;
+      setter(prev => prev + digit);
     } else {
       const setter  = target === 'quickQty' ? setQuickQty : setQuantity;
       const current = target === 'quickQty' ? quickQty    : quantity;
@@ -198,12 +213,17 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
     }
   }
 
-  const meta        = selectedCat ? CATEGORY_META[selectedCat] : null;
-  const finalAmount = getFinalAmount();
-  const unitCost    = getUnitCost();
+  const meta              = selectedCat ? CATEGORY_META[selectedCat] : null;
+  const finalAmount       = getFinalAmount();
+  const unitCost          = getUnitCost();
+  const effectiveUnitPrice = getEffectiveUnitPrice();
+  const settingsUnitPrice  = selectedCat && QUICK_SALE_CATS.includes(selectedCat)
+    ? (settings.precoVenda[selectedCat as keyof AppSettings['precoVenda']] ?? 0)
+    : 0;
   const qtyInt      = parseInt(quantity) || 0;
   const quickQtyInt = parseInt(quickQty) || 1;
   const costUnknown = selectedCat && REPO_CATS.includes(selectedCat) && unitCost === 0;
+  const priceIsCustom = !!customUnitPrice && effectiveUnitPrice !== settingsUnitPrice;
 
   return (
     <>
@@ -355,34 +375,69 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
         {/* ── STEP 1B — Quantidade de venda rápida ── */}
         {step === 'quick_qty' && meta && (
           <div className="flex flex-col pb-6 shrink-0">
-            <div
-              className="mx-5 mb-2 rounded-2xl flex flex-col items-center justify-center py-5"
-              style={{ background: 'linear-gradient(145deg, #ecfdf5, #d1fae5)' }}
-            >
-              <p className="text-5xl font-black tabular-nums" style={{ color: '#059669' }}>{quickQtyInt}</p>
-              <p className="text-xs font-bold mt-1" style={{ color: '#6ee7b7' }}>
-                {quickQtyInt === 1 ? 'unidade' : 'unidades'}
-              </p>
-            </div>
+            {/* Display principal — muda conforme o modo */}
+            {editingPrice ? (
+              <div
+                className="mx-5 mb-2 rounded-2xl flex flex-col items-center justify-center py-5"
+                style={{ background: 'linear-gradient(145deg, #fefce8, #fef9c3)' }}
+              >
+                <p className="text-[10px] font-black tracking-widest uppercase mb-1" style={{ color: '#92400e' }}>
+                  Preço por unidade
+                </p>
+                <p className="text-5xl font-black tabular-nums" style={{ color: '#d97706' }}>
+                  {customUnitPrice ? `R$ ${customUnitPrice}` : 'R$ 0,00'}
+                </p>
+              </div>
+            ) : (
+              <div
+                className="mx-5 mb-2 rounded-2xl flex flex-col items-center justify-center py-5"
+                style={{ background: 'linear-gradient(145deg, #ecfdf5, #d1fae5)' }}
+              >
+                <p className="text-5xl font-black tabular-nums" style={{ color: '#059669' }}>{quickQtyInt}</p>
+                <p className="text-xs font-bold mt-1" style={{ color: '#6ee7b7' }}>
+                  {quickQtyInt === 1 ? 'unidade' : 'unidades'}
+                </p>
+              </div>
+            )}
 
+            {/* Fórmula */}
             <div
               className="mx-5 mb-3 rounded-xl px-4 py-2.5 flex items-center justify-between"
-              style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}
+              style={{ background: '#f0fdf4', border: `1px solid ${priceIsCustom ? '#fcd34d' : '#bbf7d0'}` }}
             >
-              <p className="text-xs font-medium" style={{ color: '#065f46' }}>
-                {quickQtyInt} × {formatBRL(settings.precoVenda[selectedCat! as keyof AppSettings['precoVenda']] ?? 0)}
-              </p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="text-xs font-medium" style={{ color: '#065f46' }}>
+                  {quickQtyInt} ×
+                </p>
+                <button
+                  onClick={() => { setEditingPrice(true); if (!customUnitPrice) setCustomUnitPrice(settingsUnitPrice.toFixed(2).replace('.', ',')); }}
+                  className="flex items-center gap-1 rounded-lg px-2 py-0.5 active:scale-95 transition-all"
+                  style={{
+                    background: priceIsCustom ? '#fef3c7' : 'rgba(0,0,0,0.04)',
+                    border: priceIsCustom ? '1px solid #fcd34d' : '1px solid #bbf7d0',
+                  }}
+                >
+                  <span className="text-xs font-black tabular-nums" style={{ color: priceIsCustom ? '#d97706' : '#059669' }}>
+                    {formatBRL(effectiveUnitPrice)}
+                  </span>
+                  <Pencil size={9} style={{ color: priceIsCustom ? '#d97706' : '#6ee7b7' }} />
+                </button>
+              </div>
               <p className="text-base font-black tabular-nums" style={{ color: '#059669' }}>
                 = {formatBRL(finalAmount)}
               </p>
             </div>
 
+            {/* Numpad — quantidade ou preço */}
             <div className="px-5 grid grid-cols-3 gap-2 mb-4">
-              {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((key) => (
+              {(editingPrice
+                ? ['1','2','3','4','5','6','7','8','9',',','0','⌫']
+                : ['1','2','3','4','5','6','7','8','9','','0','⌫']
+              ).map((key, i) => (
                 key === '' ? <div key="spacer" /> : (
                   <button
-                    key={key}
-                    onClick={() => handleNumpad(key, 'quickQty')}
+                    key={key === '⌫' ? 'back' : key === ',' ? 'comma' : `${key}-${i}`}
+                    onClick={() => handleNumpad(key, editingPrice ? 'customPrice' : 'quickQty')}
                     className="h-13 rounded-2xl text-lg font-bold active:scale-95 transition-all duration-75"
                     style={{
                       height: '52px',
@@ -396,23 +451,43 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
               ))}
             </div>
 
-            <div className="px-5 flex gap-3">
-              <button
-                onClick={() => setStep('category')}
-                className="flex-1 h-14 rounded-2xl text-sm font-bold"
-                style={{ background: '#f1f5f9', color: '#64748b', fontFamily: 'inherit' }}
-              >Voltar</button>
-              <button
-                onClick={() => setStep('confirm')}
-                disabled={quickQtyInt <= 0}
-                className="flex-2 h-14 rounded-2xl text-sm font-bold active:scale-95 disabled:opacity-40 transition-all"
-                style={{
-                  background: 'linear-gradient(135deg, #10b981, #059669)',
-                  color: '#fff', fontFamily: 'inherit',
-                  boxShadow: '0 4px 16px rgba(5,150,105,0.4)',
-                }}
-              >Continuar →</button>
-            </div>
+            {editingPrice ? (
+              <div className="px-5 flex gap-3">
+                <button
+                  onClick={() => { setCustomUnitPrice(''); setEditingPrice(false); }}
+                  className="flex-1 h-14 rounded-2xl text-sm font-bold"
+                  style={{ background: '#f1f5f9', color: '#64748b', fontFamily: 'inherit' }}
+                >Cancelar</button>
+                <button
+                  onClick={() => setEditingPrice(false)}
+                  disabled={!customUnitPrice || parseFloat(customUnitPrice.replace(',', '.')) <= 0}
+                  className="flex-2 h-14 rounded-2xl text-sm font-bold active:scale-95 disabled:opacity-40 transition-all"
+                  style={{
+                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                    color: '#fff', fontFamily: 'inherit',
+                    boxShadow: '0 4px 16px rgba(217,119,6,0.4)',
+                  }}
+                >Confirmar preço ✓</button>
+              </div>
+            ) : (
+              <div className="px-5 flex gap-3">
+                <button
+                  onClick={() => setStep('category')}
+                  className="flex-1 h-14 rounded-2xl text-sm font-bold"
+                  style={{ background: '#f1f5f9', color: '#64748b', fontFamily: 'inherit' }}
+                >Voltar</button>
+                <button
+                  onClick={() => setStep('confirm')}
+                  disabled={quickQtyInt <= 0}
+                  className="flex-2 h-14 rounded-2xl text-sm font-bold active:scale-95 disabled:opacity-40 transition-all"
+                  style={{
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    color: '#fff', fontFamily: 'inherit',
+                    boxShadow: '0 4px 16px rgba(5,150,105,0.4)',
+                  }}
+                >Continuar →</button>
+              </div>
+            )}
           </div>
         )}
 
@@ -594,12 +669,19 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
               )}
 
               {QUICK_SALE_CATS.includes(selectedCat!) && (
-                <div className="mb-3 rounded-xl px-3 py-2 flex justify-between"
-                  style={{ background: 'rgba(255,255,255,0.5)' }}>
-                  <p className="text-xs font-medium" style={{ color: '#64748b' }}>
-                    {quickQtyInt} {quickQtyInt === 1 ? 'unidade' : 'unidades'} × {formatBRL(settings.precoVenda[selectedCat! as keyof AppSettings['precoVenda']] ?? 0)}
-                  </p>
-                  <p className="text-xs font-bold" style={{ color: '#059669' }}>total</p>
+                <div className="mb-3 rounded-xl px-3 py-2 flex items-center justify-between gap-2"
+                  style={{ background: 'rgba(255,255,255,0.5)', border: priceIsCustom ? '1px solid #fcd34d' : 'none' }}>
+                  <div>
+                    <p className="text-xs font-medium" style={{ color: '#64748b' }}>
+                      {quickQtyInt} {quickQtyInt === 1 ? 'unidade' : 'unidades'} × {formatBRL(effectiveUnitPrice)}
+                    </p>
+                    {priceIsCustom && (
+                      <p className="text-[10px] font-bold mt-0.5" style={{ color: '#d97706' }}>
+                        preço fidelidade (padrão: {formatBRL(settingsUnitPrice)})
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-xs font-bold shrink-0" style={{ color: '#059669' }}>total</p>
                 </div>
               )}
 

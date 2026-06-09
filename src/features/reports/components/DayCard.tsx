@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { TrendingUp, TrendingDown, ChevronDown, ChevronUp, Pencil } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronDown, ChevronUp, Pencil, Package } from 'lucide-react';
 import { type Transaction, CATEGORY_META } from '@/shared/types/transaction';
 import { type WorkDay } from '@/shared/types/workDay';
 import { formatBRL, formatFullDate, formatShortDate, toLocalDate } from '@/shared/lib/format';
@@ -29,12 +29,13 @@ export function buildSummaries(workDays: WorkDay[], transactions: Transaction[])
 }
 
 interface DayCardProps {
-  summary:   DaySummary;
-  onEdit?:   (tx: Transaction) => void;
-  onDelete?: (id: string) => void;
+  summary:       DaySummary;
+  onEdit?:       (tx: Transaction) => void;
+  onDelete?:     (id: string) => void;
+  onEditStock?:  (date: string) => void;
 }
 
-export const DayCard = memo(function DayCard({ summary, onEdit, onDelete }: DayCardProps) {
+export const DayCard = memo(function DayCard({ summary, onEdit, onDelete, onEditStock }: DayCardProps) {
   const [expanded, setExpanded] = useState(false);
   const { workDay, entradas, saidas, saldoFinal } = summary;
   const isEditable = !!(onEdit || onDelete);
@@ -133,6 +134,21 @@ export const DayCard = memo(function DayCard({ summary, onEdit, onDelete }: DayC
                 />
               ))}
             </div>
+          )}
+
+          {onEditStock && (
+            <button
+              onClick={e => { e.stopPropagation(); onEditStock(workDay.date); }}
+              className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold active:scale-95 transition-all"
+              style={{
+                background: 'linear-gradient(135deg, #0c4a6e, #0369a1)',
+                color: '#fff',
+                boxShadow: '0 4px 14px rgba(3,105,161,0.3)',
+              }}
+            >
+              <Package size={15} />
+              Editar Estoque deste Dia
+            </button>
           )}
         </div>
       )}

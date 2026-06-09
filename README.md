@@ -43,8 +43,8 @@ npm install
 ### 3. Variáveis de Ambiente
 Crie um arquivo `.env.local` na raiz contendo seu acesso ao Supabase:
 ```env
-VITE_SUPABASE_URL=sua_url_do_projeto
-VITE_SUPABASE_ANON_KEY=sua_apiKey_publica_do_projeto
+SUPABASE_URL=sua_url_do_projeto
+SUPABASE_ANON_KEY=sua_apiKey_publica_do_projeto
 ```
 
 ### 4. Iniciando Modo de Desenvolvimento
