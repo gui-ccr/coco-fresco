@@ -24,14 +24,24 @@ export type Category =
   | "outros";
 
 export type AreaId = "trabalho" | "casa" | "aleatorio";
-
+export type PaymentMethod = 'money' | 'pix' | 'card_debit' | 'card_credit';
 export interface Transaction {
   id: string;
   cat: Category;
   value: number;
+  net_value: number;    // Valor líquido real (O que de fato entra no banco)
+  fee_lost: number;
+  payment_method: PaymentMethod;
   when: string;
   note?: string;
 }
+
+export const CARD_FEES = {
+  money: 0.0,         
+  pix: 0.0,           
+  card_debit: 0.0199, 
+  card_credit: 0.0499 
+};
 
 export interface CategoryMeta {
   label: string;
@@ -252,3 +262,5 @@ export const REPO_CATS: Category[] = [
   "garrafa500",
   "garrafa1l",
 ];
+
+
