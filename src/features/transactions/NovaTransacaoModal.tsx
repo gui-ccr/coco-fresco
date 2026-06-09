@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
-import { X, ChevronRight, Zap, AlertTriangle, Check, Settings, CalendarDays, Pencil } from 'lucide-react';
+import { X, ChevronRight, Zap, AlertTriangle, Check, Settings, CalendarDays, Pencil, Tag } from 'lucide-react';
 import { type Category, type Transaction, CATEGORY_META, QUICK_SALE_CATS, REPO_CATS } from '@/shared/types/transaction';
 import { type AreaId } from '@/shared/types/area';
 import { type AppSettings, DEFAULT_SETTINGS } from '@/shared/types/settings';
@@ -44,8 +44,10 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
   const [amount, setAmount]           = useState('');
   const [note, setNote]               = useState('');
   const [selectedDate, setSelectedDate] = useState(todayValue());
-  const [customUnitPrice, setCustomUnitPrice] = useState('');
-  const [editingPrice, setEditingPrice]       = useState(false);
+  const [customUnitPrice, setCustomUnitPrice]   = useState('');
+  const [editingPrice, setEditingPrice]         = useState(false);
+  const [customTotalAmount, setCustomTotalAmount] = useState('');
+  const [editingTotal, setEditingTotal]           = useState(false);
 
   const sheetRef    = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -60,6 +62,8 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
     setSelectedDate(todayValue());
     setCustomUnitPrice('');
     setEditingPrice(false);
+    setCustomTotalAmount('');
+    setEditingTotal(false);
   }
 
   if (isOpen && !mounted) setMounted(true);
@@ -119,9 +123,21 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
     setSelectedCat(cat);
     setCustomUnitPrice('');
     setEditingPrice(false);
+    setCustomTotalAmount('');
+    setEditingTotal(false);
     if (QUICK_SALE_CATS.includes(cat)) { setQuickQty(''); setStep('quick_qty'); }
     else if (REPO_CATS.includes(cat))  { setQuantity(''); setStep('quantity'); }
     else                               { setAmount(''); setStep('amount'); }
+  }
+
+  function handleCatSelectWithDiscount(cat: Category) {
+    setSelectedCat(cat);
+    setCustomUnitPrice('');
+    setEditingPrice(false);
+    setCustomTotalAmount('');
+    setEditingTotal(true);
+    setQuickQty('1');
+    setStep('quick_qty');
   }
 
   function handleQuantityNext() {
@@ -166,6 +182,9 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
   function getFinalAmount(): number {
     if (!selectedCat) return 0;
     if (QUICK_SALE_CATS.includes(selectedCat)) {
+      if (customTotalAmount) {
+        return parseFloat(customTotalAmount.replace(',', '.')) || 0;
+      }
       const unitPrice = getEffectiveUnitPrice();
       return parseFloat(((parseInt(quickQty) || 1) * unitPrice).toFixed(2));
     }
@@ -185,8 +204,10 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
   function buildAutoNote(): string {
     if (!selectedCat) return '';
     if (QUICK_SALE_CATS.includes(selectedCat)) {
-      const qty = parseInt(quickQty) || 1;
-      return qty > 1 ? `${qty} unidades` : '';
+      const qty   = parseInt(quickQty) || 1;
+      const parts = qty > 1 ? [`${qty} unidades`] : [];
+      if (customTotalAmount) parts.push('desconto aplicado');
+      return parts.join(', ');
     }
     if (REPO_CATS.includes(selectedCat)) {
       const qty = parseInt(quantity) || 0;
@@ -195,10 +216,10 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
     return '';
   }
 
-  function handleNumpad(digit: string, target: 'quickQty' | 'quantity' | 'amount' | 'customPrice') {
-    if (target === 'amount' || target === 'customPrice') {
-      const val    = target === 'amount' ? amount : customUnitPrice;
-      const setter = target === 'amount' ? setAmount : setCustomUnitPrice;
+  function handleNumpad(digit: string, target: 'quickQty' | 'quantity' | 'amount' | 'customPrice' | 'totalAmount') {
+    if (target === 'amount' || target === 'customPrice' || target === 'totalAmount') {
+      const val    = target === 'amount' ? amount : target === 'customPrice' ? customUnitPrice : customTotalAmount;
+      const setter = target === 'amount' ? setAmount : target === 'customPrice' ? setCustomUnitPrice : setCustomTotalAmount;
       if (digit === '⌫') { setter(prev => prev.slice(0, -1)); return; }
       if (digit === ',' && (val.includes(',') || val === '')) return;
       if (val.split(',')[1]?.length >= 2) return;
@@ -220,10 +241,13 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
   const settingsUnitPrice  = selectedCat && QUICK_SALE_CATS.includes(selectedCat)
     ? (settings.precoVenda[selectedCat as keyof AppSettings['precoVenda']] ?? 0)
     : 0;
-  const qtyInt      = parseInt(quantity) || 0;
-  const quickQtyInt = parseInt(quickQty) || 1;
-  const costUnknown = selectedCat && REPO_CATS.includes(selectedCat) && unitCost === 0;
-  const priceIsCustom = !!customUnitPrice && effectiveUnitPrice !== settingsUnitPrice;
+  const qtyInt        = parseInt(quantity) || 0;
+  const quickQtyInt   = parseInt(quickQty) || 1;
+  const costUnknown   = selectedCat && REPO_CATS.includes(selectedCat) && unitCost === 0;
+  const totalIsCustom = !!customTotalAmount && parseFloat(customTotalAmount.replace(',', '.')) > 0;
+  const priceIsCustom = !!customUnitPrice && effectiveUnitPrice !== settingsUnitPrice && !totalIsCustom;
+  const standardTotal = quickQtyInt * settingsUnitPrice;
+  const discountValue = totalIsCustom ? standardTotal - finalAmount : 0;
 
   return (
     <>
@@ -318,22 +342,39 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
                     const m     = CATEGORY_META[cat];
                     const preco = settings.precoVenda[cat as keyof AppSettings['precoVenda']];
                     return (
-                      <button
+                      <div
                         key={cat}
-                        onClick={() => handleCatSelect(cat)}
-                        className="relative flex flex-col items-start rounded-2xl p-4 text-left active:scale-95 transition-all duration-100"
+                        className="rounded-2xl overflow-hidden flex flex-col"
                         style={{ background: 'linear-gradient(145deg,#ecfdf5,#d1fae5)', border: '2px solid #6ee7b7' }}
                       >
-                        <span
-                          className="absolute top-2.5 right-2.5 text-[9px] font-black uppercase tracking-wider rounded-full px-1.5 py-0.5"
-                          style={{ background: '#059669', color: '#fff' }}
-                        >1 tap</span>
-                        <span className="text-3xl mb-2 leading-none">{m.emoji}</span>
-                        <p className="text-sm font-black leading-tight" style={{ color: '#065f46' }}>{m.label}</p>
-                        <p className="text-xl font-black tabular-nums mt-0.5" style={{ color: '#059669' }}>
-                          {formatBRL(preco)}
-                        </p>
-                      </button>
+                        {/* Venda normal */}
+                        <button
+                          onClick={() => handleCatSelect(cat)}
+                          className="relative flex flex-col items-start p-4 text-left active:scale-95 transition-all duration-100 flex-1"
+                        >
+                          <span
+                            className="absolute top-2.5 right-2.5 text-[9px] font-black uppercase tracking-wider rounded-full px-1.5 py-0.5"
+                            style={{ background: '#059669', color: '#fff' }}
+                          >1 tap</span>
+                          <span className="text-3xl mb-2 leading-none">{m.emoji}</span>
+                          <p className="text-sm font-black leading-tight" style={{ color: '#065f46' }}>{m.label}</p>
+                          <p className="text-xl font-black tabular-nums mt-0.5" style={{ color: '#059669' }}>
+                            {formatBRL(preco)}
+                          </p>
+                        </button>
+
+                        {/* Venda com desconto */}
+                        <button
+                          onClick={() => handleCatSelectWithDiscount(cat)}
+                          className="flex items-center justify-center gap-1.5 py-2 active:opacity-60 transition-opacity"
+                          style={{ borderTop: '1.5px solid #6ee7b7', background: '#f0fdf4' }}
+                        >
+                          <Tag size={10} style={{ color: '#059669' }} />
+                          <span className="text-[10px] font-black" style={{ color: '#059669' }}>
+                            com desconto
+                          </span>
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -375,7 +416,8 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
         {/* ── STEP 1B — Quantidade de venda rápida ── */}
         {step === 'quick_qty' && meta && (
           <div className="flex flex-col pb-6 shrink-0">
-            {/* Display principal — muda conforme o modo */}
+
+            {/* Display principal — 3 modos */}
             {editingPrice ? (
               <div
                 className="mx-5 mb-2 rounded-2xl flex flex-col items-center justify-center py-5"
@@ -387,6 +429,23 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
                 <p className="text-5xl font-black tabular-nums" style={{ color: '#d97706' }}>
                   {customUnitPrice ? `R$ ${customUnitPrice}` : 'R$ 0,00'}
                 </p>
+              </div>
+            ) : editingTotal ? (
+              <div
+                className="mx-5 mb-2 rounded-2xl flex flex-col items-center justify-center py-5"
+                style={{ background: 'linear-gradient(145deg, #fdf4ff, #f3e8ff)' }}
+              >
+                <p className="text-[10px] font-black tracking-widest uppercase mb-1" style={{ color: '#6b21a8' }}>
+                  Valor total da venda
+                </p>
+                <p className="text-5xl font-black tabular-nums" style={{ color: '#7c3aed' }}>
+                  {customTotalAmount ? `R$ ${customTotalAmount}` : 'R$ 0,00'}
+                </p>
+                {discountValue > 0 && (
+                  <p className="text-xs font-bold mt-1.5" style={{ color: '#a855f7' }}>
+                    desconto de {formatBRL(discountValue)}
+                  </p>
+                )}
               </div>
             ) : (
               <div
@@ -403,41 +462,93 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
             {/* Fórmula */}
             <div
               className="mx-5 mb-3 rounded-xl px-4 py-2.5 flex items-center justify-between"
-              style={{ background: '#f0fdf4', border: `1px solid ${priceIsCustom ? '#fcd34d' : '#bbf7d0'}` }}
+              style={{
+                background: '#f0fdf4',
+                border: `1px solid ${totalIsCustom ? '#d8b4fe' : priceIsCustom ? '#fcd34d' : '#bbf7d0'}`,
+              }}
             >
               <div className="flex items-center gap-1.5 flex-wrap">
-                <p className="text-xs font-medium" style={{ color: '#065f46' }}>
+                <p className="text-xs font-medium" style={{ color: totalIsCustom ? '#6b21a8' : '#065f46' }}>
                   {quickQtyInt} ×
                 </p>
-                <button
-                  onClick={() => { setEditingPrice(true); if (!customUnitPrice) setCustomUnitPrice(settingsUnitPrice.toFixed(2).replace('.', ',')); }}
-                  className="flex items-center gap-1 rounded-lg px-2 py-0.5 active:scale-95 transition-all"
-                  style={{
-                    background: priceIsCustom ? '#fef3c7' : 'rgba(0,0,0,0.04)',
-                    border: priceIsCustom ? '1px solid #fcd34d' : '1px solid #bbf7d0',
-                  }}
-                >
-                  <span className="text-xs font-black tabular-nums" style={{ color: priceIsCustom ? '#d97706' : '#059669' }}>
+                {!totalIsCustom && (
+                  <button
+                    onClick={() => {
+                      setEditingTotal(false);
+                      setCustomTotalAmount('');
+                      setEditingPrice(true);
+                      if (!customUnitPrice) setCustomUnitPrice(settingsUnitPrice.toFixed(2).replace('.', ','));
+                    }}
+                    className="flex items-center gap-1 rounded-lg px-2 py-0.5 active:scale-95 transition-all"
+                    style={{
+                      background: priceIsCustom ? '#fef3c7' : 'rgba(0,0,0,0.04)',
+                      border: priceIsCustom ? '1px solid #fcd34d' : '1px solid #bbf7d0',
+                    }}
+                  >
+                    <span className="text-xs font-black tabular-nums" style={{ color: priceIsCustom ? '#d97706' : '#059669' }}>
+                      {formatBRL(effectiveUnitPrice)}
+                    </span>
+                    <Pencil size={9} style={{ color: priceIsCustom ? '#d97706' : '#6ee7b7' }} />
+                  </button>
+                )}
+                {totalIsCustom && (
+                  <span className="text-xs font-medium line-through" style={{ color: '#94a3b8' }}>
                     {formatBRL(effectiveUnitPrice)}
                   </span>
-                  <Pencil size={9} style={{ color: priceIsCustom ? '#d97706' : '#6ee7b7' }} />
-                </button>
+                )}
               </div>
-              <p className="text-base font-black tabular-nums" style={{ color: '#059669' }}>
-                = {formatBRL(finalAmount)}
-              </p>
+
+              <button
+                onClick={() => {
+                  setEditingPrice(false);
+                  setCustomUnitPrice('');
+                  setEditingTotal(true);
+                  if (!customTotalAmount) setCustomTotalAmount(finalAmount.toFixed(2).replace('.', ','));
+                }}
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1 active:scale-95 transition-all"
+                style={{
+                  background: totalIsCustom ? '#f3e8ff' : 'rgba(0,0,0,0.04)',
+                  border: totalIsCustom ? '1px solid #d8b4fe' : '1px solid #bbf7d0',
+                }}
+              >
+                <span className="text-base font-black tabular-nums" style={{ color: totalIsCustom ? '#7c3aed' : '#059669' }}>
+                  = {formatBRL(finalAmount)}
+                </span>
+                <Pencil size={9} style={{ color: totalIsCustom ? '#a855f7' : '#6ee7b7' }} />
+              </button>
             </div>
 
-            {/* Numpad — quantidade ou preço */}
+            {totalIsCustom && !editingTotal && (
+              <div
+                className="mx-5 mb-3 rounded-xl px-3 py-2 flex items-center justify-between"
+                style={{ background: '#fdf4ff', border: '1px solid #e9d5ff' }}
+              >
+                <p className="text-[10px] font-bold" style={{ color: '#6b21a8' }}>
+                  Desconto aplicado — padrão seria {formatBRL(standardTotal)}
+                </p>
+                <button
+                  onClick={() => { setCustomTotalAmount(''); }}
+                  className="text-[10px] font-black active:opacity-60"
+                  style={{ color: '#a855f7' }}
+                >remover</button>
+              </div>
+            )}
+
+            {/* Numpad */}
             <div className="px-5 grid grid-cols-3 gap-2 mb-4">
-              {(editingPrice
+              {(editingPrice || editingTotal
                 ? ['1','2','3','4','5','6','7','8','9',',','0','⌫']
                 : ['1','2','3','4','5','6','7','8','9','','0','⌫']
               ).map((key, i) => (
                 key === '' ? <div key="spacer" /> : (
                   <button
                     key={key === '⌫' ? 'back' : key === ',' ? 'comma' : `${key}-${i}`}
-                    onClick={() => handleNumpad(key, editingPrice ? 'customPrice' : 'quickQty')}
+                    onClick={() => handleNumpad(
+                      key,
+                      editingPrice  ? 'customPrice' :
+                      editingTotal  ? 'totalAmount'  :
+                                      'quickQty'
+                    )}
                     className="h-13 rounded-2xl text-lg font-bold active:scale-95 transition-all duration-75"
                     style={{
                       height: '52px',
@@ -451,6 +562,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
               ))}
             </div>
 
+            {/* Ações — 3 modos */}
             {editingPrice ? (
               <div className="px-5 flex gap-3">
                 <button
@@ -468,6 +580,24 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
                     boxShadow: '0 4px 16px rgba(217,119,6,0.4)',
                   }}
                 >Confirmar preço ✓</button>
+              </div>
+            ) : editingTotal ? (
+              <div className="px-5 flex gap-3">
+                <button
+                  onClick={() => { setCustomTotalAmount(''); setEditingTotal(false); }}
+                  className="flex-1 h-14 rounded-2xl text-sm font-bold"
+                  style={{ background: '#f1f5f9', color: '#64748b', fontFamily: 'inherit' }}
+                >Cancelar</button>
+                <button
+                  onClick={() => setEditingTotal(false)}
+                  disabled={!customTotalAmount || parseFloat(customTotalAmount.replace(',', '.')) <= 0}
+                  className="flex-2 h-14 rounded-2xl text-sm font-bold active:scale-95 disabled:opacity-40 transition-all"
+                  style={{
+                    background: 'linear-gradient(135deg, #9333ea, #7c3aed)',
+                    color: '#fff', fontFamily: 'inherit',
+                    boxShadow: '0 4px 16px rgba(124,58,237,0.4)',
+                  }}
+                >Confirmar valor ✓</button>
               </div>
             ) : (
               <div className="px-5 flex gap-3">
@@ -669,12 +799,22 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
               )}
 
               {QUICK_SALE_CATS.includes(selectedCat!) && (
-                <div className="mb-3 rounded-xl px-3 py-2 flex items-center justify-between gap-2"
-                  style={{ background: 'rgba(255,255,255,0.5)', border: priceIsCustom ? '1px solid #fcd34d' : 'none' }}>
+                <div
+                  className="mb-3 rounded-xl px-3 py-2 flex items-center justify-between gap-2"
+                  style={{
+                    background: 'rgba(255,255,255,0.5)',
+                    border: totalIsCustom ? '1px solid #d8b4fe' : priceIsCustom ? '1px solid #fcd34d' : 'none',
+                  }}
+                >
                   <div>
                     <p className="text-xs font-medium" style={{ color: '#64748b' }}>
                       {quickQtyInt} {quickQtyInt === 1 ? 'unidade' : 'unidades'} × {formatBRL(effectiveUnitPrice)}
                     </p>
+                    {totalIsCustom && (
+                      <p className="text-[10px] font-bold mt-0.5" style={{ color: '#7c3aed' }}>
+                        valor editado — desconto de {formatBRL(discountValue)} (padrão: {formatBRL(standardTotal)})
+                      </p>
+                    )}
                     {priceIsCustom && (
                       <p className="text-[10px] font-bold mt-0.5" style={{ color: '#d97706' }}>
                         preço fidelidade (padrão: {formatBRL(settingsUnitPrice)})
