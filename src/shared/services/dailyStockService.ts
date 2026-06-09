@@ -7,27 +7,37 @@ export interface DailyStock {
   g1l: number;
   g500: number;
   g300: number;
+  copos_gratis: number;
+  g1l_gratis: number;
+  g500_gratis: number;
+  g300_gratis: number;
+  copos_sobrou: number | null;
+  g1l_sobrou: number | null;
+  g500_sobrou: number | null;
+  g300_sobrou: number | null;
 }
 
-type DailyStockRow = {
-  id: string;
-  date: string;
-  copos: number;
-  g1l: number;
-  g500: number;
-  g300: number;
+type DailyStockRow = DailyStock & {
   created_at: string;
   updated_at: string;
 };
 
 function rowToStock(row: DailyStockRow): DailyStock {
   return {
-    id:    row.id,
-    date:  row.date,
-    copos: row.copos,
-    g1l:   row.g1l,
-    g500:  row.g500,
-    g300:  row.g300,
+    id:           row.id,
+    date:         row.date,
+    copos:        row.copos,
+    g1l:          row.g1l,
+    g500:         row.g500,
+    g300:         row.g300,
+    copos_gratis: row.copos_gratis ?? 0,
+    g1l_gratis:   row.g1l_gratis   ?? 0,
+    g500_gratis:  row.g500_gratis  ?? 0,
+    g300_gratis:  row.g300_gratis  ?? 0,
+    copos_sobrou: row.copos_sobrou ?? null,
+    g1l_sobrou:   row.g1l_sobrou   ?? null,
+    g500_sobrou:  row.g500_sobrou  ?? null,
+    g300_sobrou:  row.g300_sobrou  ?? null,
   };
 }
 

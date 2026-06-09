@@ -1,23 +1,28 @@
 import { useCallback, useMemo, useState, useRef, useLayoutEffect } from 'react';
 import { gsap } from 'gsap';
-import { Package, Plus, Minus, TrendingDown, BarChart3, Gift, ClipboardCheck, ChevronDown, ChevronUp, X, Check } from 'lucide-react';
+import { ArrowLeft, Package, Plus, Minus, TrendingDown, BarChart3, Gift, ClipboardCheck, ChevronDown, ChevronUp, X, Check } from 'lucide-react';
 import { useTransactionsQuery } from '@/shared/hooks/queries/useTransactionsQuery';
 import { useSettingsQuery } from '@/shared/hooks/queries/useSettingsQuery';
 import { useDailyStockQuery, useUpsertDailyStockMutation } from '@/shared/hooks/queries/useDailyStockQuery';
 import { DEFAULT_SETTINGS } from '@/shared/types/settings';
-import { todayDate, toLocalDate, formatFullDate } from '@/shared/lib/format';
+import { toLocalDate, formatFullDate } from '@/shared/lib/format';
 import type { DailyStock } from '@/shared/services/dailyStockService';
+
+interface Props {
+  date:   string;
+  onBack: () => void;
+}
 
 type StockKey = 'copos' | 'g1l' | 'g500' | 'g300';
 
 const CONTAINERS: {
-  key: StockKey;
-  label: string;
+  key:     StockKey;
+  label:   string;
   sublabel: string;
-  emoji: string;
+  emoji:   string;
   salecat: 'venda_copo' | 'venda_g1l' | 'venda_g500' | 'venda_g300';
-  color: string;
-  bg: string;
+  color:   string;
+  bg:      string;
 }[] = [
   { key: 'copos', label: 'Copos',          sublabel: 'Copo plástico',  emoji: '🥤', salecat: 'venda_copo',  color: '#0891b2', bg: '#ecfeff' },
   { key: 'g1l',   label: 'Garrafas 1L',    sublabel: '1 litro',        emoji: '🍾', salecat: 'venda_g1l',   color: '#0369a1', bg: '#e0f2fe' },
@@ -38,12 +43,12 @@ interface NumpadTarget {
 }
 
 interface NumpadSheetProps {
-  target:   NumpadTarget;
-  input:    string;
-  onKey:    (k: string) => void;
+  target:    NumpadTarget;
+  input:     string;
+  onKey:     (k: string) => void;
   onConfirm: () => void;
-  onClear:  () => void;
-  onClose:  () => void;
+  onClear:   () => void;
+  onClose:   () => void;
 }
 
 function NumpadSheet({ target, input, onKey, onConfirm, onClear, onClose }: NumpadSheetProps) {
@@ -56,16 +61,15 @@ function NumpadSheet({ target, input, onKey, onConfirm, onClear, onClose }: Nump
     if (!sheet || !backdrop) return;
     gsap.set(sheet,    { y: '100%' });
     gsap.set(backdrop, { opacity: 0 });
-    gsap.to(sheet,    { y: '0%',   duration: 0.38, ease: 'expo.out' });
+    gsap.to(sheet,    { y: '0%',    duration: 0.38, ease: 'expo.out' });
     gsap.to(backdrop, { opacity: 1, duration: 0.22, ease: 'power2.out' });
   }, []);
 
   const displayValue = input === '' ? '0' : input;
-
   const label =
-    target.type === 'init'    ? 'Estoque inicial' :
-    target.type === 'gratis'  ? 'Dado de graça'   :
-                                'Sobraram';
+    target.type === 'init'   ? 'Estoque inicial' :
+    target.type === 'gratis' ? 'Dado de graça'   :
+                               'Sobraram';
 
   return (
     <>
@@ -88,12 +92,10 @@ function NumpadSheet({ target, input, onKey, onConfirm, onClear, onClose }: Nump
           willChange: 'transform',
         }}
       >
-        {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 shrink-0">
           <div className="w-10 h-1.5 rounded-full" style={{ background: '#e2e8f0' }} />
         </div>
 
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 shrink-0">
           <div>
             <p className="text-[10px] font-black tracking-widest uppercase" style={{ color: '#94a3b8' }}>{label}</p>
@@ -110,7 +112,6 @@ function NumpadSheet({ target, input, onKey, onConfirm, onClear, onClose }: Nump
           </button>
         </div>
 
-        {/* Display */}
         <div
           className="mx-5 mb-3 rounded-2xl flex flex-col items-center justify-center py-5"
           style={{ background: target.type === 'gratis' ? 'linear-gradient(145deg,#faf5ff,#f3e8ff)' : 'linear-gradient(145deg,#f0f9ff,#e0f2fe)' }}
@@ -123,7 +124,6 @@ function NumpadSheet({ target, input, onKey, onConfirm, onClear, onClose }: Nump
           </p>
         </div>
 
-        {/* Numpad */}
         <div className="px-5 grid grid-cols-3 gap-2 mb-4 shrink-0">
           {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((key, i) => (
             key === '' ? <div key="spacer" /> : (
@@ -143,7 +143,6 @@ function NumpadSheet({ target, input, onKey, onConfirm, onClear, onClose }: Nump
           ))}
         </div>
 
-        {/* Actions */}
         <div className="px-5 pb-6 flex gap-3 shrink-0">
           {target.canClear ? (
             <button
@@ -237,12 +236,10 @@ function StepperRow({ container: c, value, isLoading, onInc, onDec, onTapValue, 
   );
 }
 
-// ── EstoqueView ───────────────────────────────────────────────────────────────
+// ── EstoqueEditView ───────────────────────────────────────────────────────────
 
-export function EstoqueView() {
-  const today = todayDate();
-
-  const { data: stockData, isLoading } = useDailyStockQuery(today);
+export function EstoqueEditView({ date, onBack }: Props) {
+  const { data: stockData, isLoading } = useDailyStockQuery(date);
   const { mutate: upsertStock }        = useUpsertDailyStockMutation();
 
   const { data: transactions = [] }           = useTransactionsQuery();
@@ -252,9 +249,8 @@ export function EstoqueView() {
   const [numpadTarget, setNumpadTarget]       = useState<NumpadTarget | null>(null);
   const [numpadInput,  setNumpadInput]        = useState('');
 
-  // ── Dados do banco com defaults ───────────────────────────────────────────
   const stock = useMemo((): Omit<DailyStock, 'id'> => ({
-    date:         today,
+    date,
     copos:        stockData?.copos        ?? 0,
     g1l:          stockData?.g1l          ?? 0,
     g500:         stockData?.g500         ?? 0,
@@ -267,32 +263,29 @@ export function EstoqueView() {
     g1l_sobrou:   stockData?.g1l_sobrou   ?? null,
     g500_sobrou:  stockData?.g500_sobrou  ?? null,
     g300_sobrou:  stockData?.g300_sobrou  ?? null,
-  }), [stockData, today]);
+  }), [stockData, date]);
 
-  // ── Vendas registradas hoje ───────────────────────────────────────────────
-  const todayTxs = useMemo(
-    () => transactions.filter(tx => toLocalDate(tx.when) === today),
-    [transactions, today]
+  const dayTxs = useMemo(
+    () => transactions.filter(tx => toLocalDate(tx.when) === date),
+    [transactions, date]
   );
 
   const soldQtys = useMemo(() => {
     const r: Record<StockKey, number> = { copos: 0, g1l: 0, g500: 0, g300: 0 };
-    for (const tx of todayTxs) {
+    for (const tx of dayTxs) {
       if (tx.cat === 'venda_copo')  { const p = settings.precoVenda.venda_copo;  r.copos += p > 0 ? Math.round(tx.value / p) : 1; }
       if (tx.cat === 'venda_g1l')   { const p = settings.precoVenda.venda_g1l;   r.g1l   += p > 0 ? Math.round(tx.value / p) : 1; }
       if (tx.cat === 'venda_g500')  { const p = settings.precoVenda.venda_g500;  r.g500  += p > 0 ? Math.round(tx.value / p) : 1; }
       if (tx.cat === 'venda_g300')  { const p = settings.precoVenda.venda_g300;  r.g300  += p > 0 ? Math.round(tx.value / p) : 1; }
     }
     return r;
-  }, [todayTxs, settings]);
+  }, [dayTxs, settings]);
 
-  // ── Mutations diretas ─────────────────────────────────────────────────────
   const adjustField = useCallback((field: keyof Omit<DailyStock, 'id' | 'date'>, delta: number) => {
     const current = (stock[field] as number) ?? 0;
     upsertStock({ ...stock, [field]: Math.max(0, current + delta) });
   }, [stock, upsertStock]);
 
-  // ── Numpad ────────────────────────────────────────────────────────────────
   function openNumpad(target: NumpadTarget) {
     setNumpadTarget(target);
     setNumpadInput(target.current !== null ? String(target.current) : '');
@@ -328,7 +321,6 @@ export function EstoqueView() {
     setNumpadInput('');
   }
 
-  // ── Cálculos ──────────────────────────────────────────────────────────────
   const remaining = useMemo(
     () => CONTAINERS.reduce<Record<StockKey, number>>((acc, c) => {
       const gratis = (stock[`${c.key}_gratis` as keyof typeof stock] as number) ?? 0;
@@ -349,20 +341,36 @@ export function EstoqueView() {
   }), [stock, soldQtys]);
 
   const hasConciliacao = conciliacao.some(c => c.sobrou !== null);
-  const formattedDate  = formatFullDate(today);
+  const formattedDate  = formatFullDate(date);
 
   return (
     <div className="flex flex-col min-h-full" style={{ background: '#f0f9ff' }}>
 
       {/* ── Header ── */}
       <div className="px-5 pt-12 pb-6 flex-shrink-0" style={{ background: 'linear-gradient(160deg, #0c4a6e 0%, #0369a1 100%)' }}>
+        {/* Back button */}
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 mb-4 active:opacity-70 transition-opacity"
+        >
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ background: 'rgba(255,255,255,0.15)' }}
+          >
+            <ArrowLeft size={16} color="#fff" strokeWidth={2.5} />
+          </div>
+          <span className="text-xs font-bold" style={{ color: 'rgba(255,255,255,0.75)' }}>
+            Voltar ao Relatório
+          </span>
+        </button>
+
         <div className="flex items-center gap-3 mb-1">
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)' }}>
             <Package size={20} color="#fff" strokeWidth={2.5} />
           </div>
           <div>
-            <p className="text-[10px] font-black tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.6)' }}>Logística</p>
-            <h1 className="text-xl font-black" style={{ color: '#fff' }}>Estoque</h1>
+            <p className="text-[10px] font-black tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.6)' }}>Editar Estoque</p>
+            <h1 className="text-xl font-black" style={{ color: '#fff' }}>Estoque do Dia</h1>
           </div>
         </div>
         <p className="text-xs mt-3 capitalize" style={{ color: 'rgba(255,255,255,0.65)' }}>{formattedDate}</p>
@@ -439,11 +447,12 @@ export function EstoqueView() {
           </div>
         </section>
 
-        {/* ── Vendas de Hoje ── */}
+        {/* ── Vendas do Dia ── */}
         <section>
           <div className="flex items-center gap-2 mb-3">
             <TrendingDown size={14} color="#059669" />
-            <p className="text-[11px] font-black tracking-widest uppercase" style={{ color: '#059669' }}>Vendas de Hoje</p>
+            <p className="text-[11px] font-black tracking-widest uppercase" style={{ color: '#059669' }}>Vendas do Dia</p>
+            <span className="ml-auto text-[9px] font-bold" style={{ color: '#94a3b8' }}>somente leitura</span>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
             {CONTAINERS.map(c => {
@@ -459,21 +468,21 @@ export function EstoqueView() {
           </div>
         </section>
 
-        {/* ── Saldo Atual ── */}
+        {/* ── Saldo ── */}
         <section>
           <div className="flex items-center gap-2 mb-3">
             <BarChart3 size={14} color="#7c3aed" />
-            <p className="text-[11px] font-black tracking-widest uppercase" style={{ color: '#7c3aed' }}>Saldo Atual</p>
+            <p className="text-[11px] font-black tracking-widest uppercase" style={{ color: '#7c3aed' }}>Saldo</p>
           </div>
           <div className="space-y-2.5">
             {CONTAINERS.map(c => {
-              const init    = stock[c.key];
-              const sold    = soldQtys[c.key];
-              const gratis  = (stock[`${c.key}_gratis` as keyof typeof stock] as number) ?? 0;
-              const rem     = remaining[c.key];
-              const saidas  = sold + gratis;
-              const pct     = init > 0 ? Math.min(100, Math.max(0, (saidas / init) * 100)) : 0;
-              const isNeg   = rem < 0;
+              const init   = stock[c.key];
+              const sold   = soldQtys[c.key];
+              const gratis = (stock[`${c.key}_gratis` as keyof typeof stock] as number) ?? 0;
+              const rem    = remaining[c.key];
+              const saidas = sold + gratis;
+              const pct    = init > 0 ? Math.min(100, Math.max(0, (saidas / init) * 100)) : 0;
+              const isNeg  = rem < 0;
 
               return (
                 <div key={c.key} className="rounded-2xl px-4 py-3.5" style={{ background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: isNeg ? '1.5px solid #fca5a5' : '1.5px solid transparent' }}>
@@ -554,7 +563,6 @@ export function EstoqueView() {
                           : '1.5px solid #fca5a5',
                       }}
                     >
-                      {/* Cabeçalho */}
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <span className="text-base">{c.emoji}</span>
@@ -573,7 +581,6 @@ export function EstoqueView() {
                         )}
                       </div>
 
-                      {/* Mini resumo */}
                       <div className="grid grid-cols-3 gap-2 mb-3">
                         {[
                           { label: 'Início', value: c.inicio, color: '#475569' },
@@ -595,7 +602,6 @@ export function EstoqueView() {
                         <div className="flex-1 h-px" style={{ background: '#f1f5f9' }} />
                       </div>
 
-                      {/* Input sobrou */}
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: '#64748b' }}>
                           Quantos sobraram de fato?
@@ -669,7 +675,6 @@ export function EstoqueView() {
         <div className="h-4" />
       </div>
 
-      {/* ── Numpad Sheet ── */}
       {numpadTarget && (
         <NumpadSheet
           target={numpadTarget}

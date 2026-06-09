@@ -8,6 +8,7 @@ import { SettingsView } from '@/features/settings/SettingsView';
 import { RelatorioView } from '@/features/reports/RelatorioView';
 import { NotesView } from '@/features/notes/NotesView';
 import { EstoqueView } from '@/features/estoque/EstoqueView';
+import { EstoqueEditView } from '@/features/estoque/EstoqueEditView';
 import {
   useAddTransactionMutation,
   useUpdateTransactionMutation,
@@ -24,8 +25,9 @@ function App() {
     openAreaModal, openFabModal, closeModal,
   } = useApp();
 
-  const [editingTx, setEditingTx]       = useState<Transaction | null>(null);
-  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingTx, setEditingTx]           = useState<Transaction | null>(null);
+  const [editModalOpen, setEditModalOpen]   = useState(false);
+  const [editingStockDate, setEditingStockDate] = useState<string | null>(null);
 
   const addTxMutation    = useAddTransactionMutation();
   const updateTxMutation = useUpdateTransactionMutation();
@@ -41,13 +43,29 @@ function App() {
   }
 
   const renderContent = () => {
+    if (editingStockDate) {
+      return (
+        <EstoqueEditView
+          date={editingStockDate}
+          onBack={() => setEditingStockDate(null)}
+        />
+      );
+    }
+
     switch (activeTab) {
       case 'dashboard': return <DashboardView />;
       case 'trabalho':  return <AreaView areaId="trabalho"  onAdd={() => openAreaModal('trabalho'  as AreaId)} onEdit={handleEdit} onDelete={handleDelete} />;
       case 'casa':      return <AreaView areaId="casa"      onAdd={() => openAreaModal('casa'      as AreaId)} onEdit={handleEdit} onDelete={handleDelete} />;
       case 'aleatorio': return <AreaView areaId="aleatorio" onAdd={() => openAreaModal('aleatorio' as AreaId)} onEdit={handleEdit} onDelete={handleDelete} />;
       case 'estoque':   return <EstoqueView />;
-      case 'relatorio': return <RelatorioView onSubModalChange={setSubModalOpen} onEdit={handleEdit} onDelete={handleDelete} />;
+      case 'relatorio': return (
+        <RelatorioView
+          onSubModalChange={setSubModalOpen}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onEditStock={date => { setEditingStockDate(date); setActiveTab('relatorio'); }}
+        />
+      );
       case 'notes':     return <NotesView />;
       case 'config':    return <SettingsView />;
       default:          return <DashboardView />;
