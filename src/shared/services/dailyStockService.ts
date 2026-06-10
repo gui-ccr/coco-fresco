@@ -3,6 +3,8 @@ import { api } from '@/config/axios';
 export interface DailyStock {
   id: string;
   date: string;
+  cocos_inicio: number;
+  cocos_sobrou: number | null;
   copos: number;
   g1l: number;
   g500: number;
@@ -26,6 +28,8 @@ function rowToStock(row: DailyStockRow): DailyStock {
   return {
     id:           row.id,
     date:         row.date,
+    cocos_inicio: row.cocos_inicio ?? 0,
+    cocos_sobrou: row.cocos_sobrou ?? null,
     copos:        row.copos,
     g1l:          row.g1l,
     g500:         row.g500,

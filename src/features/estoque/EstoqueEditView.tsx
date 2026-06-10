@@ -263,6 +263,8 @@ export function EstoqueEditView({ date, onBack }: Props) {
     g1l_sobrou:   stockData?.g1l_sobrou   ?? null,
     g500_sobrou:  stockData?.g500_sobrou  ?? null,
     g300_sobrou:  stockData?.g300_sobrou  ?? null,
+    cocos_inicio: stockData?.cocos_inicio ?? 0,
+    cocos_sobrou: stockData?.cocos_sobrou ?? null,
   }), [stockData, date]);
 
   const dayTxs = useMemo(

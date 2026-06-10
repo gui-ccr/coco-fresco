@@ -28,8 +28,8 @@ const CONTAINERS: {
 // ── NumpadSheet ───────────────────────────────────────────────────────────────
 
 interface NumpadTarget {
-  type:     'init' | 'gratis' | 'sobrou';
-  key:      StockKey;
+  type:     'init' | 'gratis' | 'sobrou' | 'cocos_inicio' | 'cocos_sobrou';
+  key:      StockKey | 'cocos_inicio' | 'cocos_sobrou';
   label:    string;
   emoji:    string;
   color:    string;
@@ -255,6 +255,8 @@ export function EstoqueView() {
   // ── Dados do banco com defaults ───────────────────────────────────────────
   const stock = useMemo((): Omit<DailyStock, 'id'> => ({
     date:         today,
+    cocos_inicio: stockData?.cocos_inicio ?? 0,
+    cocos_sobrou: stockData?.cocos_sobrou ?? null,
     copos:        stockData?.copos        ?? 0,
     g1l:          stockData?.g1l          ?? 0,
     g500:         stockData?.g500         ?? 0,
@@ -308,9 +310,11 @@ export function EstoqueView() {
     if (!numpadTarget) return;
     const val = parseInt(numpadInput) || 0;
     const { type, key } = numpadTarget;
-    if (type === 'init')   upsertStock({ ...stock, [key]: val });
-    if (type === 'gratis') upsertStock({ ...stock, [`${key}_gratis`]: val });
-    if (type === 'sobrou') upsertStock({ ...stock, [`${key}_sobrou`]: val });
+    if (type === 'cocos_inicio') upsertStock({ ...stock, cocos_inicio: val });
+    if (type === 'cocos_sobrou') upsertStock({ ...stock, cocos_sobrou: val });
+    if (type === 'init')         upsertStock({ ...stock, [key]: val });
+    if (type === 'gratis')       upsertStock({ ...stock, [`${key}_gratis`]: val });
+    if (type === 'sobrou')       upsertStock({ ...stock, [`${key}_sobrou`]: val });
     setNumpadTarget(null);
     setNumpadInput('');
   }
@@ -318,7 +322,8 @@ export function EstoqueView() {
   function clearNumpad() {
     if (!numpadTarget) return;
     const { type, key } = numpadTarget;
-    if (type === 'sobrou') upsertStock({ ...stock, [`${key}_sobrou`]: null });
+    if (type === 'cocos_sobrou') upsertStock({ ...stock, cocos_sobrou: null });
+    if (type === 'sobrou')       upsertStock({ ...stock, [`${key}_sobrou`]: null });
     setNumpadTarget(null);
     setNumpadInput('');
   }
@@ -382,6 +387,54 @@ export function EstoqueView() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+
+        {/* ── Cocos no Início do Dia ── */}
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-sm">🥥</span>
+            <p className="text-[11px] font-black tracking-widest uppercase" style={{ color: '#0369a1' }}>Cocos no Início do Dia</p>
+            {isLoading && <span className="text-[10px] ml-auto" style={{ color: '#94a3b8' }}>carregando...</span>}
+          </div>
+          <div
+            className="rounded-2xl px-4 py-4 flex items-center gap-4"
+            style={{ background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1.5px solid #0891b222' }}
+          >
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: '#ecfeff' }}>
+              🥥
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-black" style={{ color: '#0f172a' }}>Cocos</p>
+              <p className="text-[10px]" style={{ color: '#94a3b8' }}>unidades brutas do dia</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => upsertStock({ ...stock, cocos_inicio: Math.max(0, stock.cocos_inicio - 1) })}
+                className="w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
+                style={{ background: '#f1f5f9', border: '1.5px solid #e2e8f0' }}
+                disabled={stock.cocos_inicio === 0 || isLoading}
+              >
+                <Minus size={16} color={stock.cocos_inicio === 0 ? '#cbd5e1' : '#475569'} strokeWidth={2.5} />
+              </button>
+              <div
+                onClick={() => openNumpad({ type: 'cocos_inicio', key: 'cocos_inicio', label: 'Cocos', emoji: '🥥', color: '#0891b2', current: stock.cocos_inicio, canClear: false })}
+                className="flex items-center justify-center active:opacity-60 transition-opacity cursor-pointer flex-shrink-0"
+                style={{ width: '2.5rem' }}
+              >
+                <span className="text-2xl font-black tabular-nums" style={{ color: '#0891b2' }}>{stock.cocos_inicio}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => upsertStock({ ...stock, cocos_inicio: stock.cocos_inicio + 1 })}
+                className="w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
+                style={{ background: '#0891b2' }}
+                disabled={isLoading}
+              >
+                <Plus size={16} color="#fff" strokeWidth={2.5} />
+              </button>
+            </div>
+          </div>
+        </section>
 
         {/* ── Estoque Inicial ── */}
         <section>

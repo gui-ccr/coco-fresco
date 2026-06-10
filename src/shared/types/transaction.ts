@@ -28,6 +28,7 @@ export interface Transaction {
   value: number;
   when: string;
   note?: string;
+  payment_method?: 'dinheiro' | 'cartao';
 }
 
 export interface CategoryMeta {

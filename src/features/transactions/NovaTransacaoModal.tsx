@@ -48,6 +48,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
   const [editingPrice, setEditingPrice]         = useState(false);
   const [customTotalAmount, setCustomTotalAmount] = useState('');
   const [editingTotal, setEditingTotal]           = useState(false);
+  const [paymentMethod, setPaymentMethod]         = useState<'dinheiro' | 'cartao' | null>(null);
 
   const sheetRef    = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -64,6 +65,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
     setEditingPrice(false);
     setCustomTotalAmount('');
     setEditingTotal(false);
+    setPaymentMethod(null);
   }
 
   if (isOpen && !mounted) setMounted(true);
@@ -87,6 +89,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
     setSelectedCat(editingTx.cat);
     setNote(editingTx.note ?? '');
     setSelectedDate(new Date(editingTx.when).toLocaleDateString('en-CA'));
+    setPaymentMethod(editingTx.payment_method ?? null);
 
     if (QUICK_SALE_CATS.includes(editingTx.cat)) {
       const unitPrice = settings.precoVenda[editingTx.cat as keyof AppSettings['precoVenda']] ?? 0;
@@ -161,7 +164,12 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
     const when = selectedDate === todayValue()
       ? new Date().toISOString()
       : new Date(selectedDate + 'T12:00:00').toISOString();
-    const txData = { cat: selectedCat, value: val, note: note || autoNote || undefined };
+    const txData = {
+      cat: selectedCat,
+      value: val,
+      note: note || autoNote || undefined,
+      payment_method: meta?.isIncome ? (paymentMethod ?? undefined) : undefined,
+    };
 
     if (isEditMode && editingTx && onUpdate) {
       onUpdate(editingTx.id, txData, when);
@@ -848,6 +856,42 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
               />
             </div>
 
+            {meta.isIncome && (
+              <div className="mb-3">
+                <p className="text-[10px] font-black tracking-widest uppercase mb-2" style={{ color: '#94a3b8' }}>
+                  Forma de pagamento
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setPaymentMethod('dinheiro')}
+                    className="h-12 rounded-2xl text-sm font-black active:scale-95 transition-all flex items-center justify-center gap-2"
+                    style={{
+                      background: paymentMethod === 'dinheiro' ? 'linear-gradient(135deg,#10b981,#059669)' : '#f8fafc',
+                      color: paymentMethod === 'dinheiro' ? '#fff' : '#64748b',
+                      border: paymentMethod === 'dinheiro' ? 'none' : '1.5px solid #e2e8f0',
+                      fontFamily: 'inherit',
+                      boxShadow: paymentMethod === 'dinheiro' ? '0 4px 12px rgba(5,150,105,0.35)' : 'none',
+                    }}
+                  >
+                    💵 Dinheiro
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethod('cartao')}
+                    className="h-12 rounded-2xl text-sm font-black active:scale-95 transition-all flex items-center justify-center gap-2"
+                    style={{
+                      background: paymentMethod === 'cartao' ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : '#f8fafc',
+                      color: paymentMethod === 'cartao' ? '#fff' : '#64748b',
+                      border: paymentMethod === 'cartao' ? 'none' : '1.5px solid #e2e8f0',
+                      fontFamily: 'inherit',
+                      boxShadow: paymentMethod === 'cartao' ? '0 4px 12px rgba(37,99,235,0.35)' : 'none',
+                    }}
+                  >
+                    💳 Cartão
+                  </button>
+                </div>
+              </div>
+            )}
+
             <input
               type="text"
               placeholder="📝  Observação (opcional)..."
@@ -870,7 +914,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
 
               <button
                 onClick={handleConfirm}
-                disabled={finalAmount <= 0}
+                disabled={finalAmount <= 0 || (meta.isIncome && !paymentMethod)}
                 className="flex-2 h-14 rounded-2xl text-sm font-bold active:scale-95 disabled:opacity-40 transition-all flex items-center justify-center gap-2"
                 style={{
                   background: meta.isIncome
