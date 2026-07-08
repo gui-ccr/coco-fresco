@@ -48,7 +48,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
   const [editingPrice, setEditingPrice]         = useState(false);
   const [customTotalAmount, setCustomTotalAmount] = useState('');
   const [editingTotal, setEditingTotal]           = useState(false);
-  const [paymentMethod, setPaymentMethod]         = useState<'dinheiro' | 'cartao' | null>(null);
+  const [paymentMethod, setPaymentMethod]         = useState<'dinheiro' | 'cartao' | null>('dinheiro');
   const [isFiado, setIsFiado]                     = useState(false);
   const [noCaixa, setNoCaixa]                     = useState(false);
 
@@ -67,7 +67,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
     setEditingPrice(false);
     setCustomTotalAmount('');
     setEditingTotal(false);
-    setPaymentMethod(null);
+    setPaymentMethod('dinheiro');
     setIsFiado(false);
     setNoCaixa(false);
   }
@@ -93,7 +93,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
     setSelectedCat(editingTx.cat);
     setNote(editingTx.note ?? '');
     setSelectedDate(new Date(editingTx.when).toLocaleDateString('en-CA'));
-    setPaymentMethod(editingTx.payment_method ?? null);
+    setPaymentMethod(editingTx.payment_method ?? 'dinheiro');
     setIsFiado(editingTx.is_fiado ?? false);
     setNoCaixa(editingTx.no_caixa ?? false);
 
@@ -134,6 +134,8 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
     setEditingPrice(false);
     setCustomTotalAmount('');
     setEditingTotal(false);
+    setIsFiado(false);
+    setNoCaixa(false);
     if (QUICK_SALE_CATS.includes(cat)) { setQuickQty(''); setStep('quick_qty'); }
     else if (REPO_CATS.includes(cat))  { setQuantity(''); setStep('quantity'); }
     else                               { setAmount(''); setStep('amount'); }
