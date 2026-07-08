@@ -182,7 +182,7 @@ function NoteModalContent({ isOpen, onClose, onSave, onDelete, editNote }: NoteM
 
         {/* Action bar */}
         <div
-          className="flex items-center gap-2 px-4 py-3 flex-shrink-0"
+          className="flex items-center gap-2 px-4 pt-3 pb-18 flex-shrink-0"
           style={{ borderTop: `1px solid ${colors.border}` }}
         >
           {editNote && onDelete && (

@@ -49,6 +49,8 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
   const [customTotalAmount, setCustomTotalAmount] = useState('');
   const [editingTotal, setEditingTotal]           = useState(false);
   const [paymentMethod, setPaymentMethod]         = useState<'dinheiro' | 'cartao' | null>(null);
+  const [isFiado, setIsFiado]                     = useState(false);
+  const [noCaixa, setNoCaixa]                     = useState(false);
 
   const sheetRef    = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -66,6 +68,8 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
     setCustomTotalAmount('');
     setEditingTotal(false);
     setPaymentMethod(null);
+    setIsFiado(false);
+    setNoCaixa(false);
   }
 
   if (isOpen && !mounted) setMounted(true);
@@ -90,6 +94,8 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
     setNote(editingTx.note ?? '');
     setSelectedDate(new Date(editingTx.when).toLocaleDateString('en-CA'));
     setPaymentMethod(editingTx.payment_method ?? null);
+    setIsFiado(editingTx.is_fiado ?? false);
+    setNoCaixa(editingTx.no_caixa ?? false);
 
     if (QUICK_SALE_CATS.includes(editingTx.cat)) {
       const unitPrice = settings.precoVenda[editingTx.cat as keyof AppSettings['precoVenda']] ?? 0;
@@ -139,6 +145,20 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
     setEditingPrice(false);
     setCustomTotalAmount('');
     setEditingTotal(true);
+    setIsFiado(false);
+    setNoCaixa(false);
+    setQuickQty('1');
+    setStep('quick_qty');
+  }
+
+  function handleCatSelectFiado(cat: Category) {
+    setSelectedCat(cat);
+    setCustomUnitPrice('');
+    setEditingPrice(false);
+    setCustomTotalAmount('');
+    setEditingTotal(false);
+    setIsFiado(true);
+    setNoCaixa(false);
     setQuickQty('1');
     setStep('quick_qty');
   }
@@ -165,10 +185,12 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
       ? new Date().toISOString()
       : new Date(selectedDate + 'T12:00:00').toISOString();
     const txData = {
-      cat: selectedCat,
-      value: val,
-      note: note || autoNote || undefined,
-      payment_method: meta?.isIncome ? (paymentMethod ?? undefined) : undefined,
+      cat:            selectedCat,
+      value:          val,
+      note:           note || autoNote || undefined,
+      payment_method: meta?.isIncome && !isFiado ? (paymentMethod ?? undefined) : undefined,
+      is_fiado:       isFiado || undefined,
+      no_caixa:       noCaixa || undefined,
     };
 
     if (isEditMode && editingTx && onUpdate) {
@@ -215,11 +237,14 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
       const qty   = parseInt(quickQty) || 1;
       const parts = qty > 1 ? [`${qty} unidades`] : [];
       if (customTotalAmount) parts.push('desconto aplicado');
+      if (isFiado) parts.push('fiado');
       return parts.join(', ');
     }
     if (REPO_CATS.includes(selectedCat)) {
-      const qty = parseInt(quantity) || 0;
-      return `${qty} ${qty === 1 ? 'unidade' : 'unidades'}`;
+      const qty   = parseInt(quantity) || 0;
+      const parts = [`${qty} ${qty === 1 ? 'unidade' : 'unidades'}`];
+      if (noCaixa) parts.push('pago antes');
+      return parts.join(', ');
     }
     return '';
   }
@@ -336,7 +361,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
 
         {/* ── STEP 1 — Escolher categoria ── */}
         {step === 'category' && (
-          <div className="flex-1 overflow-y-auto px-5 pb-8">
+          <div className="flex-1 overflow-y-auto px-5 pb-18">
             {showQuickSales && (
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
@@ -371,17 +396,26 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
                           </p>
                         </button>
 
-                        {/* Venda com desconto */}
-                        <button
-                          onClick={() => handleCatSelectWithDiscount(cat)}
-                          className="flex items-center justify-center gap-1.5 py-2 active:opacity-60 transition-opacity"
-                          style={{ borderTop: '1.5px solid #6ee7b7', background: '#f0fdf4' }}
-                        >
-                          <Tag size={10} style={{ color: '#059669' }} />
-                          <span className="text-[10px] font-black" style={{ color: '#059669' }}>
-                            com desconto
-                          </span>
-                        </button>
+                        {/* Linha inferior: desconto + fiado */}
+                        <div className="flex" style={{ borderTop: '1.5px solid #6ee7b7' }}>
+                          <button
+                            onClick={() => handleCatSelectWithDiscount(cat)}
+                            className="flex-1 flex items-center justify-center gap-1 py-2 active:opacity-60 transition-opacity"
+                            style={{ background: '#f0fdf4' }}
+                          >
+                            <Tag size={10} style={{ color: '#059669' }} />
+                            <span className="text-[10px] font-black" style={{ color: '#059669' }}>desconto</span>
+                          </button>
+                          <div style={{ width: '1.5px', background: '#6ee7b7' }} />
+                          <button
+                            onClick={() => handleCatSelectFiado(cat)}
+                            className="flex-1 flex items-center justify-center gap-1 py-2 active:opacity-60 transition-opacity"
+                            style={{ background: '#f0f9ff' }}
+                          >
+                            <span className="text-[10px]">🤝</span>
+                            <span className="text-[10px] font-black" style={{ color: '#0891b2' }}>fiado</span>
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -423,7 +457,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
 
         {/* ── STEP 1B — Quantidade de venda rápida ── */}
         {step === 'quick_qty' && meta && (
-          <div className="flex flex-col pb-6 shrink-0">
+          <div className="flex flex-col pb-18 shrink-0">
 
             {/* Display principal — 3 modos */}
             {editingPrice ? (
@@ -631,7 +665,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
 
         {/* ── STEP 2A — Quantidade (reposição) ── */}
         {step === 'quantity' && meta && (
-          <div className="flex flex-col pb-6 shrink-0">
+          <div className="flex flex-col pb-18 shrink-0">
             {costUnknown && (
               <div
                 className="mx-5 mb-4 rounded-2xl p-4 flex items-start gap-3"
@@ -723,7 +757,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
 
         {/* ── STEP 2B — Valor manual ── */}
         {step === 'amount' && meta && (
-          <div className="flex flex-col pb-6 shrink-0">
+          <div className="flex flex-col pb-18 shrink-0">
             <div
               className="mx-5 mb-4 rounded-2xl flex flex-col items-center justify-center py-5"
               style={{ background: meta.bg }}
@@ -771,7 +805,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
 
         {/* ── STEP 3 — Confirmação ── */}
         {step === 'confirm' && meta && (
-          <div className="flex flex-col pb-6 shrink-0 px-5">
+          <div className="flex flex-col pb-18 shrink-0 px-5">
             <div
               className="rounded-2xl p-5 mb-4"
               style={{
@@ -788,9 +822,9 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
                 </div>
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest" style={{ color: meta.color + 'bb' }}>
-                    {meta.isIncome ? 'entrada' : meta.isRepo ? 'reposição' : 'saída'}
+                    {isFiado ? 'fiado — só debita estoque' : noCaixa ? 'reposição sem débito' : meta.isIncome ? 'entrada' : meta.isRepo ? 'reposição' : 'saída'}
                   </p>
-                  <p className="text-base font-black" style={{ color: meta.isIncome ? '#065f46' : '#7c2d12' }}>
+                  <p className="text-base font-black" style={{ color: isFiado ? '#0891b2' : noCaixa ? '#7c3aed' : meta.isIncome ? '#065f46' : '#7c2d12' }}>
                     {meta.label}
                   </p>
                 </div>
@@ -856,7 +890,8 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
               />
             </div>
 
-            {meta.isIncome && (
+            {/* Forma de pagamento — só para vendas que não são fiado */}
+            {meta.isIncome && !isFiado && (
               <div className="mb-3">
                 <p className="text-[10px] font-black tracking-widest uppercase mb-2" style={{ color: '#94a3b8' }}>
                   Forma de pagamento
@@ -892,6 +927,43 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
               </div>
             )}
 
+            {/* Badge fiado */}
+            {isFiado && (
+              <div
+                className="mb-3 rounded-2xl px-4 py-3 flex items-center gap-2"
+                style={{ background: '#f0f9ff', border: '1.5px solid #bae6fd' }}
+              >
+                <span className="text-base">🤝</span>
+                <div className="flex-1">
+                  <p className="text-xs font-black" style={{ color: '#0369a1' }}>Venda fiado</p>
+                  <p className="text-[10px]" style={{ color: '#64748b' }}>Debita o estoque mas não entra no caixa</p>
+                </div>
+              </div>
+            )}
+
+            {/* Toggle sem débito — só para reposições */}
+            {meta.isRepo && (
+              <button
+                onClick={() => setNoCaixa(v => !v)}
+                className="mb-3 w-full rounded-2xl px-4 py-3 flex items-center gap-3 active:scale-95 transition-all"
+                style={{
+                  background: noCaixa ? '#faf5ff' : '#f8fafc',
+                  border: noCaixa ? '1.5px solid #d8b4fe' : '1.5px solid #e2e8f0',
+                }}
+              >
+                <div
+                  className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0"
+                  style={{ background: noCaixa ? '#7c3aed' : '#e2e8f0' }}
+                >
+                  {noCaixa && <Check size={12} color="#fff" strokeWidth={3} />}
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-xs font-black" style={{ color: noCaixa ? '#6b21a8' : '#64748b' }}>Não debitar do caixa de hoje</p>
+                  <p className="text-[10px]" style={{ color: '#94a3b8' }}>Repõe o estoque sem contar como gasto do dia</p>
+                </div>
+              </button>
+            )}
+
             <input
               type="text"
               placeholder="📝  Observação (opcional)..."
@@ -914,7 +986,7 @@ export function NovaTransacaoModal({ isOpen, onClose, onSave, onUpdate, editingT
 
               <button
                 onClick={handleConfirm}
-                disabled={finalAmount <= 0 || (meta.isIncome && !paymentMethod)}
+                disabled={finalAmount <= 0 || (meta.isIncome && !isFiado && !paymentMethod)}
                 className="flex-2 h-14 rounded-2xl text-sm font-bold active:scale-95 disabled:opacity-40 transition-all flex items-center justify-center gap-2"
                 style={{
                   background: meta.isIncome

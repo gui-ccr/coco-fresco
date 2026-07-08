@@ -16,8 +16,8 @@ export interface DaySummary {
 export function buildSummaries(workDays: WorkDay[], transactions: Transaction[]): DaySummary[] {
   return workDays.map(wd => {
     const txs      = transactions.filter(t => toLocalDate(t.when) === wd.date);
-    const entradas = txs.filter(t =>  CATEGORY_META[t.cat].isIncome).reduce((s, t) => s + t.value, 0);
-    const saidas   = txs.filter(t => !CATEGORY_META[t.cat].isIncome).reduce((s, t) => s + t.value, 0);
+    const entradas = txs.filter(t =>  CATEGORY_META[t.cat].isIncome && !t.is_fiado).reduce((s, t) => s + t.value, 0);
+    const saidas   = txs.filter(t => !CATEGORY_META[t.cat].isIncome && !t.no_caixa).reduce((s, t) => s + t.value, 0);
     return {
       workDay:    wd,
       entradas,

@@ -144,7 +144,7 @@ export function IniciarDiaModal({ onConfirm, onDismiss }: Props) {
         </div>
 
         {/* CTA — fixo no rodapé */}
-        <div className="px-5 pt-2 pb-6 flex-shrink-0" style={{ background: '#ffffff' }}>
+        <div className="px-5 pt-2 pb-18 flex-shrink-0" style={{ background: '#ffffff' }}>
           <button
             onClick={handleConfirm}
             disabled={!canConfirm}

@@ -109,13 +109,13 @@ export function DashboardView() {
     recentTx,
     pieData,
   } = useMemo(() => {
-    const totalIncome   = todayTxs.filter(t =>  CATEGORY_META[t.cat].isIncome).reduce((s, t) => s + t.value, 0);
-    const totalExpenses = todayTxs.filter(t => !CATEGORY_META[t.cat].isIncome).reduce((s, t) => s + t.value, 0);
+    const totalIncome   = todayTxs.filter(t =>  CATEGORY_META[t.cat].isIncome && !t.is_fiado).reduce((s, t) => s + t.value, 0);
+    const totalExpenses = todayTxs.filter(t => !CATEGORY_META[t.cat].isIncome && !t.no_caixa).reduce((s, t) => s + t.value, 0);
     const profit        = totalIncome - totalExpenses;
 
     const byArea = (area: string) =>
       todayTxs
-        .filter(t => !CATEGORY_META[t.cat].isIncome && CATEGORY_META[t.cat].area === area)
+        .filter(t => !CATEGORY_META[t.cat].isIncome && !t.no_caixa && CATEGORY_META[t.cat].area === area)
         .reduce((s, t) => s + t.value, 0);
 
     const trabalhoExp  = byArea('trabalho');

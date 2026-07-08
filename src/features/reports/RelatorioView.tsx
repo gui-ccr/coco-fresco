@@ -131,7 +131,7 @@ function Calendar({ isOpen, recordDates, selected, onSelect, onClose }: Calendar
           <div className="w-10 h-1.5 rounded-full" style={{ background: '#e2e8f0' }} />
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 pb-8 pt-2">
+        <div className="flex-1 overflow-y-auto px-5 pb-18 pt-2">
           {/* Month navigation */}
           <div className="flex items-center justify-between mb-5">
             <button

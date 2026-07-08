@@ -14,4 +14,8 @@ export const EXPENSE_GROUPS: { label: string; cats: Category[] }[] = [
     label: 'GASTOS EXTRAS',
     cats: ['lanche', 'compra', 'outros'],
   },
+  {
+    label: 'COBRANÇAS',
+    cats: ['recebimento_fiado'],
+  },
 ];

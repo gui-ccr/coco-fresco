@@ -63,9 +63,10 @@ function NumpadSheet({ target, input, onKey, onConfirm, onClear, onClose }: Nump
   const displayValue = input === '' ? '0' : input;
 
   const label =
-    target.type === 'init'    ? 'Estoque inicial' :
-    target.type === 'gratis'  ? 'Dado de graça'   :
-                                'Sobraram';
+    target.type === 'init'         ? 'Estoque inicial' :
+    target.type === 'gratis'       ? 'Dado de graça'   :
+    target.type === 'cocos_inicio' ? 'Cocos no início' :
+                                     'Sobraram';
 
   return (
     <>
@@ -353,7 +354,23 @@ export function EstoqueView() {
     return { ...c, inicio, vendas, gratis, sobrou, esperado, diferenca };
   }), [stock, soldQtys]);
 
-  const hasConciliacao = conciliacao.some(c => c.sobrou !== null);
+  const cocosComprados = useMemo(() => {
+    const cost = settings.custoUnit.coco;
+    const txs  = todayTxs.filter(tx => tx.cat === 'coco');
+    if (txs.length === 0) return 0;
+    if (!cost || cost <= 0) return null; // custo não configurado
+    return txs.reduce((sum, tx) => sum + Math.round(tx.value / cost), 0);
+  }, [todayTxs, settings]);
+
+  const cocosTotalDisponivel = cocosComprados !== null
+    ? stock.cocos_inicio + cocosComprados
+    : stock.cocos_inicio;
+
+  const cocosDiferenca = stock.cocos_sobrou !== null
+    ? stock.cocos_sobrou - cocosTotalDisponivel
+    : null;
+
+  const hasConciliacao = conciliacao.some(c => c.sobrou !== null) || stock.cocos_sobrou !== null;
   const formattedDate  = formatFullDate(today);
 
   return (
@@ -388,50 +405,176 @@ export function EstoqueView() {
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
 
-        {/* ── Cocos no Início do Dia ── */}
+        {/* ── Cocos ── */}
         <section>
           <div className="flex items-center gap-2 mb-3">
             <span className="text-sm">🥥</span>
-            <p className="text-[11px] font-black tracking-widest uppercase" style={{ color: '#0369a1' }}>Cocos no Início do Dia</p>
+            <p className="text-[11px] font-black tracking-widest uppercase" style={{ color: '#0369a1' }}>Cocos</p>
             {isLoading && <span className="text-[10px] ml-auto" style={{ color: '#94a3b8' }}>carregando...</span>}
           </div>
+
           <div
-            className="rounded-2xl px-4 py-4 flex items-center gap-4"
-            style={{ background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: '1.5px solid #0891b222' }}
+            className="rounded-2xl overflow-hidden"
+            style={{
+              background: '#fff',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+              border: stock.cocos_sobrou === null ? '1.5px solid #0891b222'
+                : cocosDiferenca === 0 ? '1.5px solid #6ee7b7'
+                : cocosDiferenca! > 0  ? '1.5px solid #fcd34d'
+                :                        '1.5px solid #fca5a5',
+            }}
           >
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: '#ecfeff' }}>
-              🥥
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-black" style={{ color: '#0f172a' }}>Cocos</p>
-              <p className="text-[10px]" style={{ color: '#94a3b8' }}>unidades brutas do dia</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => upsertStock({ ...stock, cocos_inicio: Math.max(0, stock.cocos_inicio - 1) })}
-                className="w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
-                style={{ background: '#f1f5f9', border: '1.5px solid #e2e8f0' }}
-                disabled={stock.cocos_inicio === 0 || isLoading}
-              >
-                <Minus size={16} color={stock.cocos_inicio === 0 ? '#cbd5e1' : '#475569'} strokeWidth={2.5} />
-              </button>
-              <div
-                onClick={() => openNumpad({ type: 'cocos_inicio', key: 'cocos_inicio', label: 'Cocos', emoji: '🥥', color: '#0891b2', current: stock.cocos_inicio, canClear: false })}
-                className="flex items-center justify-center active:opacity-60 transition-opacity cursor-pointer flex-shrink-0"
-                style={{ width: '2.5rem' }}
-              >
-                <span className="text-2xl font-black tabular-nums" style={{ color: '#0891b2' }}>{stock.cocos_inicio}</span>
+            {/* Linha de início */}
+            <div className="px-4 py-4 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: '#ecfeff' }}>
+                🥥
               </div>
-              <button
-                type="button"
-                onClick={() => upsertStock({ ...stock, cocos_inicio: stock.cocos_inicio + 1 })}
-                className="w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
-                style={{ background: '#0891b2' }}
-                disabled={isLoading}
-              >
-                <Plus size={16} color="#fff" strokeWidth={2.5} />
-              </button>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-black" style={{ color: '#0f172a' }}>Início do dia</p>
+                <p className="text-[10px]" style={{ color: '#94a3b8' }}>unidades brutas</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => upsertStock({ ...stock, cocos_inicio: Math.max(0, stock.cocos_inicio - 1) })}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
+                  style={{ background: '#f1f5f9', border: '1.5px solid #e2e8f0' }}
+                  disabled={stock.cocos_inicio === 0 || isLoading}
+                >
+                  <Minus size={16} color={stock.cocos_inicio === 0 ? '#cbd5e1' : '#475569'} strokeWidth={2.5} />
+                </button>
+                <div
+                  onClick={() => openNumpad({ type: 'cocos_inicio', key: 'cocos_inicio', label: 'Cocos — início', emoji: '🥥', color: '#0891b2', current: stock.cocos_inicio, canClear: false })}
+                  className="flex items-center justify-center active:opacity-60 transition-opacity cursor-pointer flex-shrink-0"
+                  style={{ width: '2.5rem' }}
+                >
+                  <span className="text-2xl font-black tabular-nums" style={{ color: '#0891b2' }}>{stock.cocos_inicio}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => upsertStock({ ...stock, cocos_inicio: stock.cocos_inicio + 1 })}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
+                  style={{ background: '#0891b2' }}
+                  disabled={isLoading}
+                >
+                  <Plus size={16} color="#fff" strokeWidth={2.5} />
+                </button>
+              </div>
+            </div>
+
+            {/* Divisor conciliação */}
+            <div className="mx-4 h-px" style={{ background: '#f1f5f9' }} />
+
+            {/* Conciliação ao final do dia */}
+            <div className="px-4 py-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] font-black tracking-widest uppercase" style={{ color: '#64748b' }}>
+                  Conciliação ao final do dia
+                </p>
+                {stock.cocos_sobrou !== null && cocosDiferenca !== null && (
+                  <span
+                    className="text-[10px] font-black rounded-full px-2 py-0.5"
+                    style={{
+                      background: cocosDiferenca === 0 ? '#d1fae5' : cocosDiferenca > 0 ? '#fef9c3' : '#fee2e2',
+                      color:      cocosDiferenca === 0 ? '#059669' : cocosDiferenca > 0 ? '#d97706' : '#dc2626',
+                    }}
+                  >
+                    {cocosDiferenca === 0 ? '✓ Conferido'
+                      : cocosDiferenca > 0 ? `+${cocosDiferenca} a mais`
+                      : `${Math.abs(cocosDiferenca)} faltam`}
+                  </span>
+                )}
+              </div>
+
+              {/* Mini stats */}
+              <div className={`grid gap-2 mb-3 ${cocosComprados !== null && cocosComprados > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                <div className="rounded-xl px-2 py-2 text-center" style={{ background: '#f8fafc' }}>
+                  <p className="text-base font-black tabular-nums" style={{ color: '#475569' }}>{stock.cocos_inicio}</p>
+                  <p className="text-[9px] font-bold uppercase tracking-wide mt-0.5" style={{ color: '#94a3b8' }}>Início</p>
+                </div>
+                {cocosComprados !== null && cocosComprados > 0 && (
+                  <div className="rounded-xl px-2 py-2 text-center" style={{ background: '#fff7ed', border: '1px solid #fed7aa' }}>
+                    <p className="text-base font-black tabular-nums" style={{ color: '#ea580c' }}>+{cocosComprados}</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wide mt-0.5" style={{ color: '#94a3b8' }}>Comprados</p>
+                  </div>
+                )}
+                <div className="rounded-xl px-2 py-2 text-center" style={{ background: '#f0f9ff', border: '1px solid #bae6fd' }}>
+                  <p className="text-base font-black tabular-nums" style={{ color: '#0369a1' }}>{cocosTotalDisponivel}</p>
+                  <p className="text-[9px] font-bold uppercase tracking-wide mt-0.5" style={{ color: '#94a3b8' }}>Total</p>
+                </div>
+              </div>
+
+              <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: '#64748b' }}>
+                Quantos cocos sobraram de fato?
+              </p>
+
+              {stock.cocos_sobrou !== null ? (
+                <>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => upsertStock({ ...stock, cocos_sobrou: Math.max(0, stock.cocos_sobrou! - 1) })}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
+                      style={{ background: '#f1f5f9', border: '1.5px solid #e2e8f0' }}
+                      disabled={stock.cocos_sobrou === 0 || isLoading}
+                    >
+                      <Minus size={16} color={stock.cocos_sobrou === 0 ? '#cbd5e1' : '#475569'} strokeWidth={2.5} />
+                    </button>
+                    <button
+                      onClick={() => openNumpad({ type: 'cocos_sobrou', key: 'cocos_sobrou', label: 'Cocos — sobraram', emoji: '🥥', color: '#0891b2', current: stock.cocos_sobrou, canClear: true })}
+                      className="flex-1 flex flex-col items-center active:scale-95 transition-transform"
+                    >
+                      <span className="text-3xl font-black tabular-nums" style={{ color: '#0891b2' }}>{stock.cocos_sobrou}</span>
+                      <span className="text-[9px] font-bold mt-0.5" style={{ color: '#94a3b8' }}>toque para editar</span>
+                    </button>
+                    <button
+                      onClick={() => upsertStock({ ...stock, cocos_sobrou: stock.cocos_sobrou! + 1 })}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-transform flex-shrink-0"
+                      style={{ background: '#0891b2' }}
+                      disabled={isLoading}
+                    >
+                      <Plus size={16} color="#fff" strokeWidth={2.5} />
+                    </button>
+                  </div>
+
+                  {cocosDiferenca !== null && cocosDiferenca !== 0 && (
+                    <div
+                      className="mt-2.5 rounded-xl px-3 py-2"
+                      style={{
+                        background: cocosDiferenca > 0 ? '#fefce8' : '#fef2f2',
+                        border: `1px solid ${cocosDiferenca > 0 ? '#fde68a' : '#fecaca'}`,
+                      }}
+                    >
+                      <p className="text-xs font-bold" style={{ color: cocosDiferenca > 0 ? '#92400e' : '#991b1b' }}>
+                        {cocosDiferenca > 0
+                          ? `Sobraram ${cocosDiferenca} coco${cocosDiferenca > 1 ? 's' : ''} a mais do que o esperado.`
+                          : `Faltam ${Math.abs(cocosDiferenca)} coco${Math.abs(cocosDiferenca) > 1 ? 's' : ''} — possível perda ou uso não registrado.`}
+                      </p>
+                    </div>
+                  )}
+                  {cocosDiferenca === 0 && (
+                    <div className="mt-2.5 rounded-xl px-3 py-2" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                      <p className="text-xs font-bold" style={{ color: '#065f46' }}>Tudo conferido! Cocos batem com o registrado. ✓</p>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => upsertStock({ ...stock, cocos_sobrou: null })}
+                    className="mt-2 text-[10px] font-black active:opacity-60"
+                    style={{ color: '#94a3b8' }}
+                  >
+                    limpar
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => openNumpad({ type: 'cocos_sobrou', key: 'cocos_sobrou', label: 'Cocos — sobraram', emoji: '🥥', color: '#0891b2', current: null, canClear: false })}
+                  className="w-full rounded-2xl py-3.5 text-sm font-bold active:scale-95 transition-all flex items-center justify-center gap-2"
+                  style={{ background: '#f8fafc', border: '1.5px dashed #cbd5e1', color: '#94a3b8' }}
+                >
+                  <ClipboardCheck size={15} />
+                  Tocar para informar quantidade
+                </button>
+              )}
             </div>
           </div>
         </section>

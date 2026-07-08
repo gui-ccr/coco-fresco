@@ -8,6 +8,7 @@ export type Category =
   | "venda_g500"
   | "venda_g1l"
   | "venda"
+  | "recebimento_fiado"
   | "coco"
   | "gelo"
   | "copo"
@@ -29,6 +30,8 @@ export interface Transaction {
   when: string;
   note?: string;
   payment_method?: 'dinheiro' | 'cartao';
+  is_fiado?: boolean;
+  no_caixa?: boolean;
 }
 
 export interface CategoryMeta {
@@ -86,6 +89,15 @@ export const CATEGORY_META: Record<Category, CategoryMeta> = {
     isRepo: false,
     color: "#059669",
     bg: "#d1fae5",
+  },
+  recebimento_fiado: {
+    label: "Recebimento fiado",
+    emoji: "🤝",
+    area: "trabalho",
+    isIncome: true,
+    isRepo: false,
+    color: "#0891b2",
+    bg: "#cffafe",
   },
   coco: {
     label: "Cocos",

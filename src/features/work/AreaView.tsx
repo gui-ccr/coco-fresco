@@ -106,8 +106,8 @@ export function AreaView({ areaId, onAdd, onEdit, onDelete }: Props) {
   }, [areaTransactions, period]);
 
   const { income, expenses, byCategory } = useMemo(() => {
-    const income   = filteredTransactions.filter(t =>  CATEGORY_META[t.cat].isIncome).reduce((s, t) => s + t.value, 0);
-    const expenses = filteredTransactions.filter(t => !CATEGORY_META[t.cat].isIncome).reduce((s, t) => s + t.value, 0);
+    const income   = filteredTransactions.filter(t =>  CATEGORY_META[t.cat].isIncome && !t.is_fiado).reduce((s, t) => s + t.value, 0);
+    const expenses = filteredTransactions.filter(t => !CATEGORY_META[t.cat].isIncome && !t.no_caixa).reduce((s, t) => s + t.value, 0);
 
     const byCategory = filteredTransactions.reduce<
       Record<string, { meta: typeof CATEGORY_META[keyof typeof CATEGORY_META]; total: number; count: number }>
